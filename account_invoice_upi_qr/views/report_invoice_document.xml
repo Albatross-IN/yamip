@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="report_invoice_document_upi_qr" inherit_id="account.report_invoice_document">
+        
+        <!-- Optionally hide Source if requested by native RND grid -->
+        <xpath expr="//div[@name='origin']" position="replace"/>
+        
+        <!-- Insert the UPI Bank Details to the left of the Totals Box -->
+        <xpath expr="//div[@id='right-elements']" position="before">
+            <t t-if="o.company_id.upi_id or o.company_id.upi_bank_name">
+                <div id="left-elements" t-attf-class="#{'col-6 mt-5' if report_type == 'pdf' else 'col-12 col-md-6'} d-inline-block float-start" style="page-break-inside: avoid;">
+                    <div class="row w-100">
+                        <!-- Left Details (Dynamic from Company setup) -->
+                        <div class="col-7 pt-2">
+                            <strong>Account Details</strong><br/>
+                            <t t-out="o.company_id.upi_payee_name or o.company_id.name"/><br/>
+                            <t t-if="o.company_id.upi_account_number">
+                                A/c: <t t-out="o.company_id.upi_account_number"/><br/>
+                            </t>
+                            <t t-if="o.company_id.upi_bank_name">
+                                Bank: <t t-out="o.company_id.upi_bank_name"/><br/>
+                            </t>
+                            <t t-if="o.company_id.upi_ifsc">
+                                IFSC: <t t-out="o.company_id.upi_ifsc"/><br/>
+                            </t>
+                        </div>
+                        <!-- Right QR Code -->
+                        <div class="col-5 text-center" t-if="o.qr_code_image">
+                            <strong>Scan to Pay via UPI</strong><br/>
+                            <img t-att-src="image_data_uri(o.qr_code_image)" style="width: 35mm; height: 35mm; margin-top: 5px;"/>
+                        </div>
+                    </div>
+                </div>
+            </t>
+        </xpath>
+
+        <xpath expr="//div[@name='comment']" position="before">
+            <div style="page-break-before: always;"/>
+        </xpath>
+        
+    </template>
+</odoo>
