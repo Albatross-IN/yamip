@@ -11,9 +11,8 @@
         for precise total amounts that customers can scan to instantly populate their UPI App.
     """,
     'author': 'RNDGrid',
-    'depends': ['base', 'account'],
+    'depends': ['base', 'account', 'l10n_in'],
     'data': [
-        'views/res_company_views.xml',
         'views/report_invoice_document.xml',
     ],
     'installable': True,
