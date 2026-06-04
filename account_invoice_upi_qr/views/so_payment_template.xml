@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="so_public_payment_page" name="Sale Order Payment">
+        <t t-call="web.layout">
+            <t t-set="head">
+                <t t-call-assets="web.assets_frontend" t-js="false"/>
+            </t>
+            <div class="container mt-5 mb-5">
+                <div class="row justify-content-center">
+                    <div class="col-md-6 col-lg-5">
+                        <div class="card shadow-sm text-center">
+                            <div class="card-header bg-white">
+                                <h4 class="mb-0">Order <t t-out="order.name"/></h4>
+                            </div>
+                            <div class="card-body">
+                                <h5 class="text-muted mb-4">Total Amount: <span t-field="order.amount_total" t-options='{"widget": "monetary", "display_currency": order.currency_id}'/></h5>
+                                
+                                <t t-if="order.qr_code_image">
+                                    <p class="mb-3">Scan this QR code with any UPI App to pay</p>
+                                    <img t-att-src="image_data_uri(order.qr_code_image)" style="width: 250px; height: 250px;" class="mb-3 border rounded shadow-sm" alt="UPI QR Code"/>
+                                    
+                                    <div class="d-flex justify-content-center gap-3 mt-2">
+                                        <h6 class="text-muted">UPI ID: <span t-out="order.company_id.l10n_in_upi_id"/></h6>
+                                    </div>
+                                </t>
+                                <t t-else="">
+                                    <div class="alert alert-warning">
+                                        UPI Payment is currently unavailable for this order.
+                                    </div>
+                                </t>
+                            </div>
+                            <div class="card-footer bg-light text-muted small">
+                                <t t-out="order.company_id.name"/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+</odoo>

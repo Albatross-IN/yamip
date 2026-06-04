@@ -19,4 +19,17 @@
             </div>
         </xpath>
     </template>
+
+    <template id="portal_invoice_page_upi_qr" inherit_id="account.portal_invoice_page">
+        <xpath expr="//div[hasclass('o_download_pdf')]" position="after">
+            <t t-if="invoice.company_id.account_fiscal_country_id.code == 'IN' and invoice.qr_code_image and invoice.payment_state in ('not_paid', 'partial')">
+                <div class="d-flex flex-column gap-2 mt-4 text-center">
+                    <h6 class="mb-0">Pay with UPI</h6>
+                    <div class="d-flex justify-content-center">
+                        <img t-att-src="image_data_uri(invoice.qr_code_image)" style="width: 150px; height: 150px;" alt="UPI QR Code"/>
+                    </div>
+                </div>
+            </t>
+        </xpath>
+    </template>
 </odoo>
