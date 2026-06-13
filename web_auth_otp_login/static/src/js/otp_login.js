@@ -373,6 +373,14 @@ function initOtpLogin() {
             }
         }
     });
+
+    // Auto submit OTP once 6 digits are typed
+    inputCode.addEventListener('input', function () {
+        const val = inputCode.value.trim();
+        if (val.length === 6 && !isNaN(val)) {
+            btnVerifyOtp.click();
+        }
+    });
 }
 
 if (document.readyState === 'loading') {
