@@ -30,29 +30,35 @@ function fetchWithTimeout(url, options = {}, timeout = 1500) {
 
 // Automatically detect country prefix based on IP, browser language, or timezone
 async function detectCountryPrefix() {
-    // 1. Try IP Geolocation API
+    // 1. Try freeipapi.com Geolocation API (higher rate limits, no keys needed)
     try {
-        const response = await fetchWithTimeout('https://ipapi.co/json/');
+        const response = await fetchWithTimeout('https://freeipapi.com/api/json');
         if (response.ok) {
             const data = await response.json();
-            if (data && data.country_calling_code) {
-                return data.country_calling_code;
+            if (data && data.countryCode) {
+                const prefix = countryToPrefix[data.countryCode.toUpperCase()];
+                if (prefix) return prefix;
             }
         }
     } catch (e) {
-        console.warn("IP geolocation failed, trying browser fallbacks...", e);
+        console.warn("freeipapi Geolocation failed, trying backup API...", e);
     }
 
-    // 2. Fallback: Browser language/locale region code
-    const lang = navigator.language || navigator.userLanguage;
-    if (lang && lang.includes('-')) {
-        const country = lang.split('-')[1].toUpperCase();
-        if (countryToPrefix[country]) {
-            return countryToPrefix[country];
+    // 2. Try ipinfo.io Geolocation API as backup
+    try {
+        const response = await fetchWithTimeout('https://ipinfo.io/json');
+        if (response.ok) {
+            const data = await response.json();
+            if (data && data.country) {
+                const prefix = countryToPrefix[data.country.toUpperCase()];
+                if (prefix) return prefix;
+            }
         }
+    } catch (e) {
+        console.warn("Backup Geolocation failed, checking timezone...", e);
     }
 
-    // 3. Fallback: Timezone mapping
+    // 3. Fallback: Timezone mapping (More accurate for physical location than browser language)
     try {
         const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
         if (tz) {
@@ -84,7 +90,16 @@ async function detectCountryPrefix() {
         console.warn("Timezone detection failed", e);
     }
 
-    // 4. Default System Fallback
+    // 4. Fallback: Browser language/locale region code (last-resort fallback)
+    const lang = navigator.language || navigator.userLanguage;
+    if (lang && lang.includes('-')) {
+        const country = lang.split('-')[1].toUpperCase();
+        if (countryToPrefix[country]) {
+            return countryToPrefix[country];
+        }
+    }
+
+    // 5. Default Fallback
     return '+91';
 }
 
@@ -135,7 +150,7 @@ function initOtpLogin() {
 
     // Detect and set country code prefix on load
     detectCountryPrefix().then(prefix => {
-        if (inputCountryCode && !inputCountryCode.value) {
+        if (inputCountryCode && prefix) {
             inputCountryCode.value = prefix;
         }
     });

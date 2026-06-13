@@ -27,6 +27,7 @@
                         </span>
                         <input type="text" 
                                placeholder="+91" 
+                               value="+91"
                                name="country_code" 
                                id="otp_country_code" 
                                class="form-control border-start-0 border-end-0 text-center px-1" 
