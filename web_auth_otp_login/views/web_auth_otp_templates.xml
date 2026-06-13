@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="web_auth_otp_login_form" inherit_id="web.login" name="WhatsApp OTP Login Interface">
+        <!-- 1. Tabs selector above the forms -->
+        <xpath expr="//form[contains(@t-attf-class, 'oe_login_form')]" position="before">
+            <div class="web-auth-otp-tabs d-flex justify-content-center mb-4">
+                <button type="button" class="btn btn-tab active w-50" id="tab_email">
+                    <i class="fa fa-envelope-o me-2"/>Email Login
+                </button>
+                <button type="button" class="btn btn-tab w-50" id="tab_otp">
+                    <i class="fa fa-whatsapp me-2"/>WhatsApp OTP
+                </button>
+            </div>
+        </xpath>
+
+        <!-- 2. OTP Form injected after standard login form -->
+        <xpath expr="//form[contains(@t-attf-class, 'oe_login_form')]" position="after">
+            <form class="oe_otp_login_form d-none" role="form" id="otp_login_form">
+                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                <input type="hidden" name="redirect" t-att-value="redirect" id="otp_redirect"/>
+                
+                <div class="mb-3 field-phone" id="otp_phone_container">
+                    <label for="otp_phone" class="form-label">Phone Number</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0">
+                            <i class="fa fa-phone text-muted"/>
+                        </span>
+                        <input type="tel" 
+                               placeholder="e.g., +919999912345" 
+                               name="phone" 
+                               id="otp_phone" 
+                               class="form-control border-start-0 ps-0" 
+                               required="required"
+                               autocomplete="tel"/>
+                    </div>
+                    <div class="form-text text-muted small mt-1">
+                        Enter your phone number with country code (e.g. +91...) to receive a secure login code via WhatsApp.
+                    </div>
+                </div>
+
+                <div class="mb-3 field-otp d-none" id="otp_code_container">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <label for="otp_code" class="form-label mb-0">Verification Code</label>
+                        <span id="otp_timer" class="text-danger small fw-bold"></span>
+                    </div>
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0">
+                            <i class="fa fa-lock text-muted"/>
+                        </span>
+                        <input type="text" 
+                               placeholder="Enter 6-digit OTP" 
+                               name="otp_code" 
+                               id="otp_code" 
+                               class="form-control border-start-0 ps-0 text-center letter-spacing-lg" 
+                               maxlength="6"
+                               autocomplete="one-time-code"/>
+                    </div>
+                </div>
+
+                <!-- Alert Banners -->
+                <div class="alert alert-danger d-none" id="otp_error_msg" role="alert"/>
+                <div class="alert alert-success d-none" id="otp_success_msg" role="status"/>
+
+                <!-- Action Buttons -->
+                <div class="d-grid gap-2 pt-3">
+                    <button type="button" class="btn btn-primary btn-lg font-weight-bold" id="btn_send_otp">
+                        Send OTP via WhatsApp
+                    </button>
+                    <button type="button" class="btn btn-success btn-lg font-weight-bold d-none" id="btn_verify_otp">
+                        Verify &amp; Sign In
+                    </button>
+                    <div class="text-center mt-2 d-none" id="resend_container">
+                        <button type="button" class="btn btn-link btn-sm text-decoration-none" id="btn_resend_otp" disabled="disabled">
+                            Resend Code
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </xpath>
+    </template>
+</odoo>
