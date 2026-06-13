@@ -1,0 +1,179 @@
+/* WhatsApp OTP Login Interface Premium Styling */
+
+.web-auth-otp-tabs {
+    background: rgba(240, 242, 245, 0.8);
+    border-radius: 12px;
+    padding: 4px;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.web-auth-otp-tabs .btn-tab {
+    border: none;
+    background: transparent;
+    color: #5f6368;
+    font-weight: 600;
+    font-size: 0.9rem;
+    padding: 10px 16px;
+    border-radius: 8px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    outline: none;
+    box-shadow: none !important;
+}
+
+.web-auth-otp-tabs .btn-tab:hover {
+    color: #128C7E;
+    background: rgba(18, 140, 126, 0.05);
+}
+
+.web-auth-otp-tabs .btn-tab.active {
+    background: #ffffff;
+    color: #128C7E;
+    box-shadow: 0 4px 12px rgba(18, 140, 126, 0.15) !important;
+}
+
+/* Custom transitions and states */
+.oe_otp_login_form, .oe_login_form {
+    animation: fadeIn 0.4s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Styled Input Fields */
+#otp_login_form .input-group-text {
+    border-color: #dee2e6;
+    transition: border-color 0.3s ease;
+}
+
+#otp_login_form .form-control {
+    border-color: #dee2e6;
+    height: calc(2.25rem + 10px);
+    font-size: 0.95rem;
+    box-shadow: none;
+    transition: all 0.3s ease;
+}
+
+#otp_login_form .form-control:focus {
+    border-color: #128C7E;
+    box-shadow: 0 0 0 3px rgba(18, 140, 126, 0.15);
+}
+
+#otp_login_form .form-control:focus + .input-group-text,
+#otp_login_form .input-group:focus-within .input-group-text {
+    border-color: #128C7E;
+}
+
+/* OTP Code Formatting */
+#otp_code {
+    letter-spacing: 0.5em;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #128C7E;
+    text-indent: 0.25em; /* centers the letter-spaced text */
+}
+
+#otp_code::placeholder {
+    letter-spacing: normal;
+    font-size: 1rem;
+    font-weight: normal;
+    text-indent: 0;
+}
+
+/* Button & Alert Overrides */
+#btn_send_otp {
+    background-color: #128C7E;
+    border-color: #128C7E;
+    color: #ffffff;
+    transition: all 0.2s ease;
+}
+
+#btn_send_otp:hover {
+    background-color: #075E54;
+    border-color: #075E54;
+    transform: translateY(-1px);
+}
+
+#btn_verify_otp {
+    background-color: #25D366;
+    border-color: #25D366;
+    color: #ffffff;
+    transition: all 0.2s ease;
+}
+
+#btn_verify_otp:hover {
+    background-color: #20ba59;
+    border-color: #20ba59;
+    transform: translateY(-1px);
+}
+
+/* Alerts */
+#otp_login_form .alert {
+    border-radius: 8px;
+    font-size: 0.9rem;
+    padding: 12px;
+    margin-top: 15px;
+    border: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+/* Responsive constraints and centering */
+#otp_login_form, .web-auth-otp-tabs {
+    max-width: 92%;
+    margin-left: auto;
+    margin-right: auto;
+    width: 100%;
+}
+
+@media (min-width: 576px) {
+    #otp_login_form, .web-auth-otp-tabs {
+        max-width: 380px;
+    }
+}
+
+/* Unified Phone Input Group Styling */
+#otp_phone_container .input-group {
+    border-radius: 8px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+#otp_phone_container .input-group-text,
+#otp_phone_container .form-control {
+    background-color: #ffffff !important;
+    border-color: #dee2e6 !important;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+#otp_phone_container .input-group-text {
+    color: #6c757d;
+}
+
+/* Highlight the entire group when any input inside is focused */
+#otp_phone_container .input-group:focus-within {
+    box-shadow: 0 0 0 3px rgba(18, 140, 126, 0.15);
+}
+
+#otp_phone_container .input-group:focus-within .input-group-text,
+#otp_phone_container .input-group:focus-within .form-control {
+    border-color: #128C7E !important;
+}
+
+/* Custom list styling inside datalist */
+#otp_country_code::-webkit-calendar-picker-indicator {
+    opacity: 0.5;
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+}
+
+#otp_country_code::-webkit-calendar-picker-indicator:hover {
+    opacity: 0.8;
+}

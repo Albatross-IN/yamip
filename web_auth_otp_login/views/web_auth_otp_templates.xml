@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="web_auth_otp_login_form" inherit_id="web.login" name="WhatsApp OTP Login Interface">
+        <!-- 1. Tabs selector above the forms -->
+        <xpath expr="//form[contains(@t-attf-class, 'oe_login_form')]" position="before">
+            <div class="web-auth-otp-tabs d-flex justify-content-center mb-4">
+                <button type="button" class="btn btn-tab active w-50" id="tab_email">
+                    <i class="fa fa-envelope-o me-2"/>Email Login
+                </button>
+                <button type="button" class="btn btn-tab w-50" id="tab_otp">
+                    <i class="fa fa-whatsapp me-2"/>WhatsApp OTP
+                </button>
+            </div>
+        </xpath>
+
+        <!-- 2. OTP Form injected after standard login form -->
+        <xpath expr="//form[contains(@t-attf-class, 'oe_login_form')]" position="after">
+            <form class="oe_otp_login_form d-none" role="form" id="otp_login_form">
+                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                <input type="hidden" name="redirect" t-att-value="redirect" id="otp_redirect"/>
+                
+                <div class="mb-3 field-phone" id="otp_phone_container">
+                    <label for="otp_phone_num" class="form-label">Phone Number</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0">
+                            <i class="fa fa-phone text-muted"/>
+                        </span>
+                        <input type="text" 
+                               placeholder="+91" 
+                               value="+91"
+                               name="country_code" 
+                               id="otp_country_code" 
+                               class="form-control border-start-0 border-end-0 text-center px-1" 
+                               style="max-width: 75px; font-weight: 500;"
+                               required="required"
+                               list="country_codes_list"
+                               autocomplete="tel-country-code"/>
+                        <span class="input-group-text bg-white border-start-0 border-end-0 px-1 text-muted" style="font-weight: 300;">|</span>
+                        <input type="tel" 
+                               placeholder="Phone Number" 
+                               name="phone_num" 
+                               id="otp_phone_num" 
+                               class="form-control border-start-0 ps-2" 
+                               required="required"
+                               autocomplete="tel-national"/>
+                    </div>
+                    <datalist id="country_codes_list">
+                        <option value="+91">India (+91)</option>
+                        <option value="+1">USA/Canada (+1)</option>
+                        <option value="+44">United Kingdom (+44)</option>
+                        <option value="+971">UAE (+971)</option>
+                        <option value="+65">Singapore (+65)</option>
+                        <option value="+61">Australia (+61)</option>
+                        <option value="+966">Saudi Arabia (+966)</option>
+                        <option value="+27">South Africa (+27)</option>
+                        <option value="+92">Pakistan (+92)</option>
+                        <option value="+880">Bangladesh (+880)</option>
+                        <option value="+94">Sri Lanka (+94)</option>
+                        <option value="+977">Nepal (+977)</option>
+                        <option value="+60">Malaysia (+60)</option>
+                        <option value="+62">Indonesia (+62)</option>
+                        <option value="+66">Thailand (+66)</option>
+                        <option value="+63">Philippines (+63)</option>
+                        <option value="+84">Vietnam (+84)</option>
+                        <option value="+852">Hong Kong (+852)</option>
+                        <option value="+81">Japan (+81)</option>
+                        <option value="+49">Germany (+49)</option>
+                        <option value="+33">France (+33)</option>
+                        <option value="+39">Italy (+39)</option>
+                        <option value="+34">Spain (+34)</option>
+                    </datalist>
+                    <div class="form-text text-muted small mt-1">
+                        Select or enter your country code and enter your phone number to receive a secure login code via WhatsApp.
+                    </div>
+                </div>
+
+                <div class="mb-3 field-otp d-none" id="otp_code_container">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <label for="otp_code" class="form-label mb-0">Verification Code</label>
+                        <span id="otp_timer" class="text-danger small fw-bold"></span>
+                    </div>
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0">
+                            <i class="fa fa-lock text-muted"/>
+                        </span>
+                        <input type="text" 
+                               placeholder="Enter 6-digit OTP" 
+                               name="otp_code" 
+                               id="otp_code" 
+                               class="form-control border-start-0 ps-0 text-center letter-spacing-lg" 
+                               maxlength="6"
+                               autocomplete="one-time-code"/>
+                    </div>
+                </div>
+
+                <!-- Alert Banners -->
+                <div class="alert alert-danger d-none" id="otp_error_msg" role="alert"/>
+                <div class="alert alert-success d-none" id="otp_success_msg" role="status"/>
+
+                <!-- Action Buttons -->
+                <div class="d-grid gap-2 pt-3">
+                    <button type="button" class="btn btn-primary btn-lg font-weight-bold" id="btn_send_otp">
+                        Send OTP via WhatsApp
+                    </button>
+                    <button type="button" class="btn btn-success btn-lg font-weight-bold d-none" id="btn_verify_otp">
+                        Verify &amp; Sign In
+                    </button>
+                    <div class="text-center mt-2 d-none" id="resend_container">
+                        <button type="button" class="btn btn-link btn-sm text-decoration-none" id="btn_resend_otp" disabled="disabled">
+                            Resend Code
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </xpath>
+    </template>
+</odoo>
