@@ -64,19 +64,8 @@ class WebAuthOtpController(http.Controller):
         # Find WhatsApp template
         template = request.env['whatsapp.template'].with_user(SUPERUSER_ID).search([
             ('status', '=', 'approved'),
-            ('template_name', 'in', ['otp', 'otp_login', 'verify_otp', 'whatsapp_otp'])
+            ('template_name', 'in', ['otp_auth_yamip'])
         ], limit=1)
-
-        if not template:
-            # Find any approved template as fallback
-            template = request.env['whatsapp.template'].with_user(SUPERUSER_ID).search([
-                ('status', '=', 'approved'),
-                ('template_name', 'in', ['wholesale_intro', 'sale_2'])
-            ], limit=1)
-            if not template:
-                template = request.env['whatsapp.template'].with_user(SUPERUSER_ID).search([
-                    ('status', '=', 'approved')
-                ], limit=1)
 
         if not template:
             return {'success': False, 'error': _('WhatsApp sending failed: No approved WhatsApp template found in the system.')}
