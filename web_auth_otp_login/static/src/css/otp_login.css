@@ -124,3 +124,55 @@
     border: none;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
+
+/* Responsive constraints and centering */
+#otp_login_form {
+    max-width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+@media (min-width: 576px) {
+    #otp_login_form {
+        max-width: 380px;
+    }
+}
+
+/* Unified Phone Input Group Styling */
+#otp_phone_container .input-group {
+    border-radius: 8px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+#otp_phone_container .input-group-text,
+#otp_phone_container .form-control {
+    background-color: #ffffff !important;
+    border-color: #dee2e6 !important;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+#otp_phone_container .input-group-text {
+    color: #6c757d;
+}
+
+/* Highlight the entire group when any input inside is focused */
+#otp_phone_container .input-group:focus-within {
+    box-shadow: 0 0 0 3px rgba(18, 140, 126, 0.15);
+}
+
+#otp_phone_container .input-group:focus-within .input-group-text,
+#otp_phone_container .input-group:focus-within .form-control {
+    border-color: #128C7E !important;
+}
+
+/* Custom list styling inside datalist */
+#otp_country_code::-webkit-calendar-picker-indicator {
+    opacity: 0.5;
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+}
+
+#otp_country_code::-webkit-calendar-picker-indicator:hover {
+    opacity: 0.8;
+}
