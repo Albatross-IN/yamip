@@ -18,6 +18,7 @@
         'whatsapp',
     ],
     'data': [
+        'data/whatsapp_template_data.xml',
         'views/web_auth_otp_templates.xml',
     ],
     'assets': {
