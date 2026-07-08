@@ -61,8 +61,9 @@ class WebAuthOtpController(http.Controller):
                 create_vals['mobile'] = phone_clean
             partner = request.env['res.partner'].sudo().create(create_vals)
 
-        # Find WhatsApp template
-        template = request.env.sudo().ref('web_auth_otp_login.wa_template_otp_auth_generic', raise_if_not_found=False)
+        template = request.env.ref('web_auth_otp_login.wa_template_otp_auth_generic', raise_if_not_found=False)
+        if template:
+            template = template.sudo()
         if not template:
             template = request.env['whatsapp.template'].sudo().search([
                 ('status', '=', 'approved'),
