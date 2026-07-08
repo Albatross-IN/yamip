@@ -25,12 +25,12 @@ class WebAuthOtpController(http.Controller):
             return {'success': False, 'error': _('Please enter a valid phone number.')}
 
         # Build dynamic search domain for res.partner based on available fields
-        partner_fields = request.env['res.partner'].sudo()._fields
+        partner_fields = request.env['res.partner'].with_user(SUPERUSER_ID)._fields
         partner_domain = [('phone', '=', phone_clean)]
         if 'mobile' in partner_fields:
             partner_domain = ['|', ('phone', '=', phone_clean), ('mobile', '=', phone_clean)]
 
-        partner = request.env['res.partner'].sudo().search(partner_domain, limit=1)
+        partner = request.env['res.partner'].with_user(SUPERUSER_ID).search(partner_domain, limit=1)
 
         # Fallback to trailing match (last 10 digits) if no exact match found
         if not partner and len(phone_clean) >= 10:
@@ -38,12 +38,12 @@ class WebAuthOtpController(http.Controller):
             fallback_domain = [('phone', 'like', last_10)]
             if 'mobile' in partner_fields:
                 fallback_domain = ['|', ('phone', 'like', last_10), ('mobile', 'like', last_10)]
-            partner = request.env['res.partner'].sudo().search(fallback_domain, limit=1)
+            partner = request.env['res.partner'].with_user(SUPERUSER_ID).search(fallback_domain, limit=1)
 
         user = False
         if partner:
             # Find active user associated with the partner
-            user = request.env['res.users'].sudo().search([
+            user = request.env['res.users'].with_user(SUPERUSER_ID).search([
                 ('partner_id', '=', partner.id),
                 ('active', '=', True)
             ], limit=1)
@@ -59,13 +59,13 @@ class WebAuthOtpController(http.Controller):
             }
             if 'mobile' in partner_fields:
                 create_vals['mobile'] = phone_clean
-            partner = request.env['res.partner'].sudo().create(create_vals)
+            partner = request.env['res.partner'].with_user(SUPERUSER_ID).create(create_vals)
 
         template = request.env.ref('web_auth_otp_login.wa_template_otp_auth_generic', raise_if_not_found=False)
         if template:
-            template = template.sudo()
+            template = template.with_user(SUPERUSER_ID)
         if not template:
-            template = request.env['whatsapp.template'].sudo().search([
+            template = request.env['whatsapp.template'].with_user(SUPERUSER_ID).search([
                 ('status', '=', 'approved'),
                 ('template_name', '=', 'otp_auth_generic')
             ], limit=1)
@@ -87,7 +87,7 @@ class WebAuthOtpController(http.Controller):
         target_model = template.model or 'res.partner'
         res_id = partner.id
         if target_model != 'res.partner':
-            target_record = request.env[target_model].sudo().search([], limit=1)
+            target_record = request.env[target_model].with_user(SUPERUSER_ID).search([], limit=1)
             if target_record:
                 res_id = target_record.id
 
@@ -100,7 +100,7 @@ class WebAuthOtpController(http.Controller):
             if use_name_hack:
                 partner.write({'name': otp})
 
-            mail_message = request.env['mail.message'].sudo().create({
+            mail_message = request.env['mail.message'].with_user(SUPERUSER_ID).create({
                 'model': target_model,
                 'res_id': res_id,
                 'body': _('WhatsApp OTP code %s sent for login verification.') % otp,
@@ -131,7 +131,7 @@ class WebAuthOtpController(http.Controller):
                     free_text_json[f'button_dynamic_url_{i+1}'] = val
 
             # Create the whatsapp.message record
-            wa_msg = request.env['whatsapp.message'].sudo().create({
+            wa_msg = request.env['whatsapp.message'].with_user(SUPERUSER_ID).create({
                 'mail_message_id': mail_message.id,
                 'mobile_number': phone_clean,
                 'free_text_json': free_text_json,
@@ -186,10 +186,10 @@ class WebAuthOtpController(http.Controller):
 
         # Successful verification: Authenticate session programmatically
         if stored_user_id:
-            user = request.env['res.users'].sudo().browse(stored_user_id)
+            user = request.env['res.users'].with_user(SUPERUSER_ID).browse(stored_user_id)
         else:
             # Complete the auto-registration for new guest customer
-            partner = request.env['res.partner'].sudo().browse(stored_partner_id)
+            partner = request.env['res.partner'].with_user(SUPERUSER_ID).browse(stored_partner_id)
             if partner.name.startswith('Guest ('):
                 partner.write({'name': _('Customer (%s)') % phone_clean})
             
@@ -197,13 +197,13 @@ class WebAuthOtpController(http.Controller):
             login_name = phone_clean
             
             # Double check to prevent duplicate login constraint failure
-            existing_user = request.env['res.users'].sudo().search([('login', '=', login_name)], limit=1)
+            existing_user = request.env['res.users'].with_user(SUPERUSER_ID).search([('login', '=', login_name)], limit=1)
             if existing_user:
                 user = existing_user
                 if user.partner_id != partner:
                     user.write({'partner_id': partner.id})
             else:
-                user = request.env['res.users'].sudo().create({
+                user = request.env['res.users'].with_user(SUPERUSER_ID).create({
                     'name': partner.name,
                     'login': login_name,
                     'partner_id': partner.id,
@@ -229,7 +229,7 @@ class WebAuthOtpController(http.Controller):
         # Link session cart to the logged-in user
         sale_order_id = request.session.get('sale_order_id')
         if sale_order_id:
-            sale_order = request.env['sale.order'].sudo().browse(sale_order_id)
+            sale_order = request.env['sale.order'].with_user(SUPERUSER_ID).browse(sale_order_id)
             if sale_order.exists() and sale_order.state == 'draft':
                 old_partner = sale_order.partner_id
                 fields_to_update = ['partner_id']
@@ -237,7 +237,7 @@ class WebAuthOtpController(http.Controller):
                     fields_to_update.append('partner_invoice_id')
                 if sale_order.partner_shipping_id == old_partner:
                     fields_to_update.append('partner_shipping_id')
-                sale_order.sudo()._update_address(user.partner_id.id, fields_to_update)
+                sale_order.with_user(SUPERUSER_ID)._update_address(user.partner_id.id, fields_to_update)
 
         # Clear OTP and registration values from session
         request.session.pop('otp_code', None)
