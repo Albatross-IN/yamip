@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="open_whatsapp_connector.VoicePlayerSpeed"
+       t-inherit="mail.VoicePlayer" t-inherit-mode="extension">
+        <xpath expr="//div[hasclass('o-mail-VoicePlayer')]" position="inside">
+            <button class="border-0 btn btn-sm btn-light shadow-none rounded-pill me-2 px-2 py-0 o-owa-voice-speed"
+                    style="font-variant-numeric: tabular-nums; min-width: 2.8em;"
+                    title="Playback speed"
+                    t-on-click.stop="() => this.cyclePlaybackSpeed()">
+                <t t-esc="state.playbackSpeed + '×'"/>
+            </button>
+        </xpath>
+    </t>
+
+</templates>

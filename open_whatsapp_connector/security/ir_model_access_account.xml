@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Lets an internal user create/scan/manage THEIR OWN WhatsApp account.
+         Shipped INACTIVE; res.config.settings.set_values() flips it active only
+         when 'WhatsApp Account Visibility' = own_team. Record rule + create()
+         force own/team scoping; unlink stays admin-only.
+         Shipped under noupdate="1" so a later `-u` doesn't reset the runtime
+         active flag toggled by set_values(). (#F085) -->
+    <data noupdate="1">
+    <record id="access_owa_account_user_manage" model="ir.model.access">
+        <field name="name">owa.account: user self-service manage</field>
+        <field name="model_id" ref="model_owa_account"/>
+        <field name="group_id" ref="base.group_user"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="False"/>
+        <field name="active" eval="False"/>
+    </record>
+    </data>
+</odoo>

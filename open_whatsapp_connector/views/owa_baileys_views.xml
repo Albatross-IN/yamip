@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+  <!-- ───────────── Phase B2: WhatsApp group participant audit log ───────────── -->
+  <record id="view_owa_group_participant_event_list" model="ir.ui.view">
+    <field name="name">owa.group.participant.event.list</field>
+    <field name="model">owa.group.participant.event</field>
+    <field name="arch" type="xml">
+      <list default_order="create_date desc">
+        <field name="create_date" string="When"/>
+        <field name="wa_account_id"/>
+        <field name="channel_id"/>
+        <field name="action"/>
+        <field name="participants_jids"/>
+        <field name="author_jid"/>
+      </list>
+    </field>
+  </record>
+
+  <record id="view_owa_group_participant_event_form" model="ir.ui.view">
+    <field name="name">owa.group.participant.event.form</field>
+    <field name="model">owa.group.participant.event</field>
+    <field name="arch" type="xml">
+      <form>
+        <sheet>
+          <group>
+            <group>
+              <field name="wa_account_id"/>
+              <field name="channel_id"/>
+              <field name="group_jid"/>
+              <field name="action"/>
+            </group>
+            <group>
+              <field name="create_date"/>
+              <field name="author_jid"/>
+              <field name="participants_jids"/>
+            </group>
+          </group>
+        </sheet>
+      </form>
+    </field>
+  </record>
+
+  <record id="action_owa_group_participant_event" model="ir.actions.act_window">
+    <field name="name">WhatsApp Group Audit Log</field>
+    <field name="res_model">owa.group.participant.event</field>
+    <field name="view_mode">list,form</field>
+  </record>
+
+  <menuitem id="menu_owa_group_participant_event"
+            name="Group Audit Log"
+            parent="menu_owa_chats"
+            action="action_owa_group_participant_event"
+            sequence="40"/>
+
+  <!-- ───────────── Phase C3 / C2 / D: WhatsApp account form additions ─────── -->
+  <record id="view_owa_account_form_baileys" model="ir.ui.view">
+    <field name="name">owa.account.form.gateway</field>
+    <field name="model">owa.account</field>
+    <field name="inherit_id" ref="open_whatsapp_connector.owa_account_view_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//sheet" position="inside">
+        <notebook position="inside">
+          <page string="WhatsApp Profile &amp; Pairing"
+                groups="open_whatsapp_connector.group_owa_admin"
+                invisible="connection_type != 'qr'">
+            <group>
+              <group string="Business Profile Picture">
+                <field name="image_1920" widget="image"/>
+                <!-- Buttons wrapped in a full-width flex row (colspan=2) so they
+                     sit side by side at their natural width instead of being
+                     squeezed into the narrow group cell (which wrapped
+                     "Upload to WhatsApp" onto two lines, mismatching "Clear"). -->
+                <div colspan="2" class="d-flex flex-wrap gap-2 mt-2">
+                  <button name="action_fetch_profile_picture" type="object"
+                          string="Fetch from WhatsApp" class="btn-secondary"
+                          help="Load the profile picture currently set on WhatsApp for this account."/>
+                  <button name="action_push_profile_picture" type="object"
+                          string="Upload to WhatsApp" class="btn-primary"
+                          help="Set this image as the WhatsApp profile picture for this account."/>
+                  <button name="action_clear_profile_picture" type="object"
+                          string="Clear on WhatsApp" class="btn-secondary"/>
+                </div>
+              </group>
+              <group string="Pairing-Code Login"
+                     invisible="pairing_method != 'code'">
+                <field name="pairing_phone"
+                       placeholder="e.g. 919999999999 (digits only, country code first)"/>
+                <field name="pairing_code" readonly="1"/>
+                <div colspan="2" class="mt-2">
+                  <button name="action_request_pairing_code" type="object"
+                          string="Request WhatsApp Pairing Code" class="btn-primary"/>
+                </div>
+              </group>
+            </group>
+            <group string="WhatsApp Blocklist Sync">
+              <div colspan="2">
+                <button name="action_sync_whatsapp_blocklist" type="object"
+                        string="Sync from WhatsApp" class="btn-secondary"
+                        help="Pull the current blocklist from WhatsApp and add any missing entries to Odoo's blacklist."/>
+              </div>
+            </group>
+          </page>
+          <!-- Cloud counterpart: the business profile photo works over the
+               Graph API too (fetch via whatsapp_business_profile, upload via
+               resumable handle). -->
+          <page string="Business Profile"
+                groups="open_whatsapp_connector.group_owa_admin"
+                invisible="connection_type != 'cloud'">
+            <group>
+              <group string="Business Profile Picture">
+                <field name="image_1920" widget="image"/>
+                <div colspan="2" class="d-flex flex-wrap gap-2 mt-2">
+                  <button name="action_fetch_profile_picture" type="object"
+                          string="Fetch from WhatsApp" class="btn-secondary"
+                          help="Load the profile picture currently set on WhatsApp for this number."/>
+                  <button name="action_push_profile_picture" type="object"
+                          string="Upload to WhatsApp" class="btn-primary"
+                          help="Set this image as the WhatsApp business profile picture."/>
+                </div>
+              </group>
+            </group>
+          </page>
+          <!-- Cloud API onboarding + phone/WABA management. One-click
+               "Connect with Facebook" (Embedded Signup) needs the global Meta
+               App config (Settings) + HTTPS; the buttons below drive the Cloud
+               API phone-number / WABA lifecycle for a manually-entered or
+               onboarded account. -->
+          <page string="Cloud API — Onboarding &amp; Management"
+                groups="open_whatsapp_connector.group_owa_admin"
+                invisible="connection_type != 'cloud'">
+            <group string="One-click onboarding">
+              <div colspan="2">
+                <widget name="owa_embedded_signup"/>
+              </div>
+            </group>
+            <group string="Phone number &amp; Business account">
+              <div colspan="2" class="d-flex flex-wrap gap-2 mt-2">
+                <button name="action_verify_connection" type="object"
+                        string="Verify Connection" class="btn-primary"
+                        help="Ping the Graph API and mark the account connected."/>
+                <button name="action_cloud_list_numbers" type="object"
+                        string="List Numbers" class="btn-secondary"
+                        help="List the phone numbers on this WhatsApp Business Account."/>
+                <button name="action_cloud_waba_info" type="object"
+                        string="Business Account Info" class="btn-secondary"
+                        help="Show the WABA name, currency and review status."/>
+                <button name="action_cloud_subscribe_app" type="object"
+                        string="Subscribe App" class="btn-secondary"
+                        help="Subscribe this Meta app to the WABA's webhooks."/>
+                <button name="action_cloud_request_code" type="object"
+                        string="Request Code" class="btn-secondary"
+                        help="Ask Meta to send an SMS verification code to the number."/>
+                <button name="action_cloud_verify_code" type="object"
+                        string="Verify Code" class="btn-secondary"
+                        help="Enter the SMS/voice verification code."/>
+                <button name="action_cloud_register" type="object"
+                        string="Register Number" class="btn-secondary"
+                        help="Register the number on the Cloud API with a two-step PIN."/>
+                <button name="action_cloud_set_pin" type="object"
+                        string="Set Two-step PIN" class="btn-secondary"
+                        help="Set / update the two-step-verification PIN."/>
+                <button name="action_cloud_deregister" type="object"
+                        string="Deregister" class="btn-secondary"
+                        confirm="Deregister this phone number from the Cloud API?"
+                        help="Deregister the phone number from the Cloud API."/>
+              </div>
+            </group>
+          </page>
+        </notebook>
+      </xpath>
+    </field>
+  </record>
+
+  <!-- ───────────── Phase C2 / C6: res.partner action buttons ─────── -->
+  <record id="view_partner_form_baileys" model="ir.ui.view">
+    <field name="name">res.partner.form.gateway</field>
+    <field name="model">res.partner</field>
+    <field name="inherit_id" ref="base.view_partner_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//sheet" position="before">
+        <header>
+          <button name="action_block_on_whatsapp" type="object"
+                  string="Block on WhatsApp" class="oe_highlight"
+                  invisible="not phone"
+                  groups="open_whatsapp_connector.group_owa_admin"/>
+          <button name="action_unblock_on_whatsapp" type="object"
+                  string="Unblock on WhatsApp"
+                  invisible="not phone"
+                  groups="open_whatsapp_connector.group_owa_admin"/>
+          <button name="action_create_wa_audio_call_link" type="object"
+                  string="WhatsApp Audio Call Link"
+                  invisible="not phone"/>
+          <button name="action_create_wa_video_call_link" type="object"
+                  string="WhatsApp Video Call Link"
+                  invisible="not phone"/>
+        </header>
+      </xpath>
+    </field>
+  </record>
+
+  <!-- Phase C1 / Phase G — the manage-participants wizard is reached via the
+       "Manage Participants" smart button on the Group form (which passes
+       default_channel_id correctly). Older v19 builds shipped a top-level
+       menuitem that errored on click. The stale record is removed by the
+       migrations/19.0.29.0.0 post-migrate (tolerant unlink) rather than a hard
+       <delete> here — a <delete> raises "External ID not found" on every fresh
+       install and on any DB that never had that menu. -->
+
+</odoo>

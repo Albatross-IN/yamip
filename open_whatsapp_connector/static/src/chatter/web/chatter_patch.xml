@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates>
+    <t t-name="open_whatsapp_connector.Chatter" t-inherit="mail.Chatter" t-inherit-mode="extension">
+        <!-- WhatsApp toggle button in the chatter header. Highlights (success)
+             while the inline conversation is open. (#wa-open-chat) -->
+        <xpath expr="//*[hasclass('o-mail-Chatter-activity')]" position="before">
+            <button t-if="state.thread.canSendWhatsapp"
+                class="btn text-nowrap me-1"
+                t-att-class="{'btn-success': owaState.thread, 'btn-secondary': !owaState.thread, 'my-2': !props.compactHeight }"
+                data-hotkey="shift+w"
+                t-on-click="toggleWhatsapp"
+            >
+                <span>WhatsApp</span>
+            </button>
+        </xpath>
+        <!-- When toggled on, render the WhatsApp conversation (live Thread +
+             Composer for the discuss.channel) inline, in place of the record's
+             own message log, so the agent chats without leaving the record. -->
+        <xpath expr="//Thread[@thread='state.thread']" position="replace">
+            <t t-else="">
+                <t t-if="owaState.thread">
+                    <!-- A definite-height box (viewport-based, so it doesn't
+                         depend on the chatter's unresolved h-100): messages
+                         scroll in the flex-grow area; the composer lives OUTSIDE
+                         that scroll area, pinned at the bottom. Extended mode so
+                         the composer shows a Send button. (#wa-open-chat) -->
+                    <div class="o-owa-ChatterWa d-flex flex-column bg-view"
+                         style="height: calc(100vh - 220px); min-height: 320px;">
+                        <div class="flex-grow-1 overflow-auto o-scrollbar-thin px-1"
+                             style="min-height: 0;" t-ref="owaScroller">
+                            <Thread thread="owaState.thread" order="'asc'"
+                                    scrollRef="owaScroller" t-key="owaState.thread.localId"/>
+                        </div>
+                        <div class="o-owa-ChatterWa-composer border-top pt-1 px-1">
+                            <Composer composer="owaState.thread.composer" autofocus="true"
+                                      mode="'extended'" t-key="'owa-' + owaState.thread.localId"/>
+                        </div>
+                    </div>
+                </t>
+                <Thread t-else="" thread="state.thread" t-key="state.thread.localId"
+                        order="'desc'" scrollRef="rootRef" jumpPresent="state.jumpThreadPresent"/>
+            </t>
+        </xpath>
+    </t>
+</templates>

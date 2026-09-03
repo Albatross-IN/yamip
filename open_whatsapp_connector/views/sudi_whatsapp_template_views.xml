@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_sudi_whatsapp_template_tree" model="ir.ui.view">
+        <field name="name">sudi.whatsapp.template.list</field>
+        <field name="model">sudi.whatsapp.template</field>
+        <field name="arch" type="xml">
+            <list string="Sudi WhatsApp Templates" default_order="sequence, id">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="event"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_sudi_whatsapp_template_form" model="ir.ui.view">
+        <field name="name">sudi.whatsapp.template.form</field>
+        <field name="model">sudi.whatsapp.template</field>
+        <field name="arch" type="xml">
+            <form string="Sudi WhatsApp Template">
+                <sheet>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active"/>
+                    <div class="oe_title">
+                        <label for="name" string="Template Name"/>
+                        <h1>
+                            <field name="name" placeholder="e.g. Pickup Completion Notice"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="event"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                        <group>
+                            <field name="sequence"/>
+                            <field name="active"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Message Content" name="body_page">
+                            <field name="body" placeholder="Enter WhatsApp message text..." style="min-height: 250px; font-family: monospace;"/>
+                            <div class="alert alert-info mt-3" role="alert">
+                                <strong>Available Dynamic Placeholders:</strong>
+                                <ul>
+                                    <li><code>{{customer_name}}</code> - Customer Name</li>
+                                    <li><code>{{pickup_reference}}</code> - Receipt Reference No (e.g. HO/IN/00126)</li>
+                                    <li><code>{{delivery_reference}}</code> - Delivery Reference No</li>
+                                    <li><code>{{pickup_person}}</code> - Assigned Pickup Operator</li>
+                                    <li><code>{{delivery_person}}</code> - Assigned Delivery Person</li>
+                                    <li><code>{{address}}</code> - Pickup / Delivery Address</li>
+                                    <li><code>{{phone}}</code> - Customer Phone Number</li>
+                                    <li><code>{{url}}</code> - Direct Link to Receipt / Order Form View</li>
+                                </ul>
+                            </div>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_sudi_whatsapp_template_search" model="ir.ui.view">
+        <field name="name">sudi.whatsapp.template.search</field>
+        <field name="model">sudi.whatsapp.template</field>
+        <field name="arch" type="xml">
+            <search string="Search Sudi WhatsApp Templates">
+                <field name="name"/>
+                <field name="event"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+                <filter string="Active" name="active" domain="[('active', '=', True)]"/>
+                <filter string="Archived" name="inactive" domain="[('active', '=', False)]"/>
+                <separator/>
+                <group>
+                    <filter string="Event" name="group_event" context="{'group_by': 'event'}"/>
+                    <filter string="Company" name="group_company" context="{'group_by': 'company_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_sudi_whatsapp_template" model="ir.actions.act_window">
+        <field name="name">Sudi WhatsApp Templates</field>
+        <field name="res_model">sudi.whatsapp.template</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_sudi_whatsapp_template_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create a Sudi WhatsApp Template!
+            </p>
+            <p>
+                Configure WhatsApp message templates for Sudi business event triggers (Pickup, Delivery, Admin Intimation).
+            </p>
+        </field>
+    </record>
+
+    <menuitem id="menu_sudi_whatsapp_template"
+              name="Sudi WhatsApp Templates"
+              parent="open_whatsapp_connector.menu_owa_config"
+              action="action_sudi_whatsapp_template"
+              sequence="35"/>
+</odoo>

@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <record id="owa_community_view_list" model="ir.ui.view">
+    <field name="name">owa.community.list</field>
+    <field name="model">owa.community</field>
+    <field name="arch" type="xml">
+      <list string="WhatsApp Communities" sample="1" duplicate="false"
+            js_class="owa_wizard_create_list">
+        <header>
+          <button name="action_refresh_all" type="object"
+                  string="Refresh" title="Refresh communities from WhatsApp"
+                  display="always"/>
+        </header>
+        <field name="subject"/>
+        <field name="wa_account_id"/>
+        <field name="linked_group_count"/>
+        <field name="bot_state" widget="badge"
+               decoration-success="bot_state == 'active'"
+               decoration-muted="bot_state == 'disabled'"/>
+        <field name="community_jid" optional="hide"/>
+      </list>
+    </field>
+  </record>
+
+  <record id="owa_community_view_form" model="ir.ui.view">
+    <field name="name">owa.community.form</field>
+    <field name="model">owa.community</field>
+    <field name="arch" type="xml">
+      <form string="WhatsApp Community">
+        <header>
+          <button name="action_refresh_metadata" type="object" string="Refresh"/>
+          <button name="action_set_subject" type="object" string="Push Subject"/>
+          <button name="action_get_invite_link" type="object" string="Get Invite Link"/>
+          <button name="action_revoke_invite_link" type="object" string="Revoke Invite"/>
+          <button name="action_push_picture" type="object" string="Push Picture"/>
+          <button name="action_toggle_announce" type="object" string="Admins-only Posts"/>
+          <button name="action_leave" type="object"
+                  string="Leave Community" class="btn-warning"
+                  confirm="Leave this WhatsApp community? The bot will be removed."
+                  invisible="bot_state == 'disabled'"/>
+          <field name="bot_state" widget="statusbar"/>
+        </header>
+        <sheet>
+          <div class="oe_button_box" name="button_box">
+            <button name="action_open_chat" type="object"
+                    class="oe_stat_button" icon="fa-comments"
+                    invisible="not channel_id">
+              <div class="o_stat_info">
+                <span class="o_stat_text">Open</span>
+                <span class="o_stat_text">Chat</span>
+              </div>
+            </button>
+            <button name="action_open_linked_groups" type="object"
+                    class="oe_stat_button" icon="fa-sitemap">
+              <div class="o_stat_info">
+                <span class="o_stat_value">
+                  <field name="linked_group_count" readonly="1" nolabel="1"/>
+                </span>
+                <span class="o_stat_text">Groups</span>
+              </div>
+            </button>
+          </div>
+          <field name="image_1920" widget="image" class="oe_avatar"/>
+          <div class="oe_title">
+            <label for="subject" string="Community Name"/>
+            <h1>
+              <field name="subject"/>
+            </h1>
+          </div>
+          <group>
+            <group>
+              <field name="wa_account_id" readonly="1"/>
+              <field name="channel_id" readonly="1"/>
+              <field name="participant_count" readonly="1"/>
+              <!-- Internal WhatsApp identifiers — developer mode only
+                   (with a copy button when shown). -->
+              <field name="community_jid" readonly="1" widget="CopyClipboardChar"
+                     groups="base.group_no_one"/>
+              <field name="owner_jid" readonly="1" widget="CopyClipboardChar"
+                     groups="base.group_no_one"/>
+              <field name="announce_group_jid" readonly="1" widget="CopyClipboardChar"
+                     groups="base.group_no_one"/>
+              <field name="creation_ts" readonly="1" groups="base.group_no_one"/>
+            </group>
+            <group>
+              <field name="invite_url" widget="CopyClipboardURL" readonly="1"
+                     invisible="not invite_url"/>
+              <field name="created_at" readonly="1"/>
+            </group>
+          </group>
+          <group string="Members" invisible="not channel_id">
+            <field name="member_partner_ids" nolabel="1" readonly="1"
+                   widget="many2many_tags" options="{'no_create': True}"/>
+          </group>
+          <group string="Description">
+            <field name="description" nolabel="1"/>
+          </group>
+        </sheet>
+      </form>
+    </field>
+  </record>
+
+  <record id="owa_community_action" model="ir.actions.act_window">
+    <field name="name">WhatsApp Communities</field>
+    <field name="res_model">owa.community</field>
+    <field name="view_mode">list,form</field>
+    <field name="help" type="html">
+      <p class="o_view_nocontent_smiling_face">No WhatsApp communities yet</p>
+      <p>Click <b>Refresh</b> to pull existing communities, or <b>Create</b> to start one.</p>
+    </field>
+  </record>
+</odoo>

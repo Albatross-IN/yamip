@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="open_whatsapp_connector.OwaEmbeddedSignup">
+        <div class="owa-embedded-signup">
+            <button type="button" class="btn btn-primary"
+                    t-att-disabled="state.busy" t-on-click="onConnect">
+                <i class="fa fa-facebook-official me-1"/>
+                <t t-if="state.busy">Connecting…</t>
+                <t t-else="">Connect with Facebook</t>
+            </button>
+            <span class="text-muted small ms-2">
+                One-click Embedded Signup (requires HTTPS and a configured Meta App).
+            </span>
+        </div>
+    </t>
+</templates>

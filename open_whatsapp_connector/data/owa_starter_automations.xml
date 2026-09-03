@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!--
+        Starter inbound automations — ship INACTIVE so a non-technical admin
+        only has to assign a WhatsApp account and flip Active.
+
+        - 4 auto-replies (welcome / out-of-office / pricing / hours)
+        - 1 ready-made "Main Menu" chatbot (Sales / Support / Hours)
+
+        The chatbot ships with NO account (owa.chatbot.wa_account_id is optional);
+        its first_step_id is computed from the lowest-sequence step (the menu),
+        so it is not set here.
+    -->
+
+    <!-- ============ Auto-replies (owa.auto.reply) ============ -->
+
+    <record id="auto_reply_welcome" model="owa.auto.reply">
+        <field name="name">Welcome Message</field>
+        <field name="active" eval="False"/>
+        <field name="sequence">10</field>
+        <field name="trigger_type">welcome</field>
+        <field name="response_body">Hi! Thanks for messaging us. How can we help you today?</field>
+        <field name="cooldown_minutes">1440</field>
+    </record>
+
+    <record id="auto_reply_away" model="owa.auto.reply">
+        <field name="name">Out of Office (after hours)</field>
+        <field name="active" eval="False"/>
+        <field name="sequence">20</field>
+        <field name="trigger_type">away</field>
+        <field name="response_body">Thanks for your message! Our team is currently offline. We're available Monday to Friday, 9 AM - 6 PM, and will reply as soon as we're back.</field>
+        <field name="schedule_start">9.0</field>
+        <field name="schedule_end">18.0</field>
+        <field name="schedule_days">0,1,2,3,4</field>
+        <field name="cooldown_minutes">120</field>
+    </record>
+
+    <record id="auto_reply_pricing" model="owa.auto.reply">
+        <field name="name">Pricing Enquiry</field>
+        <field name="active" eval="False"/>
+        <field name="sequence">30</field>
+        <field name="trigger_type">keyword</field>
+        <field name="keyword">price,pricing,cost,quote,rate</field>
+        <field name="match_type">contains</field>
+        <field name="response_body">Thanks for your interest! A team member will share pricing shortly. Meanwhile, let us know which product or service you'd like a quote for.</field>
+        <field name="cooldown_minutes">60</field>
+    </record>
+
+    <record id="auto_reply_hours" model="owa.auto.reply">
+        <field name="name">Business Hours Enquiry</field>
+        <field name="active" eval="False"/>
+        <field name="sequence">40</field>
+        <field name="trigger_type">keyword</field>
+        <field name="keyword">hours,timing,open,closed,time</field>
+        <field name="match_type">contains</field>
+        <field name="response_body">We're open Monday to Friday, 9 AM - 6 PM. Drop your question here and we'll get back to you!</field>
+        <field name="cooldown_minutes">60</field>
+    </record>
+
+    <!-- ============ Main Menu chatbot (owa.chatbot) ============ -->
+    <!--
+        Records are declared TARGET-FIRST: every ``next_step_id`` / option
+        ref points at a step defined ABOVE it, because Odoo resolves ref= at
+        parse time (a forward ref raises "External ID not found"). Flow order
+        is driven by ``sequence`` + first_step_id, independent of file order.
+    -->
+
+    <record id="chatbot_main" model="owa.chatbot">
+        <field name="name">Main Menu Bot</field>
+        <field name="active" eval="False"/>
+        <field name="sequence">10</field>
+        <field name="welcome_message">Hi! Welcome — I'm here to help.</field>
+    </record>
+
+    <!-- ── Leaf / downstream steps first ── -->
+    <record id="chatbot_step_end" model="owa.chatbot.step">
+        <field name="chatbot_id" ref="chatbot_main"/>
+        <field name="name">End</field>
+        <field name="sequence">90</field>
+        <field name="step_type">end</field>
+        <field name="pos_x">640</field>
+        <field name="pos_y">340</field>
+        <field name="message">Thanks for reaching out — have a great day!</field>
+    </record>
+
+    <record id="chatbot_step_hours" model="owa.chatbot.step">
+        <field name="chatbot_id" ref="chatbot_main"/>
+        <field name="name">Business Hours</field>
+        <field name="sequence">80</field>
+        <field name="step_type">message</field>
+        <field name="pos_x">360</field>
+        <field name="pos_y">340</field>
+        <field name="message">We're open Monday to Friday, 9 AM - 6 PM. We'll reply during business hours.</field>
+        <field name="next_step_id" ref="chatbot_step_end"/>
+    </record>
+
+    <!-- Sales branch (declared handoff → lead → email → name) -->
+    <record id="chatbot_step_sales_handoff" model="owa.chatbot.step">
+        <field name="chatbot_id" ref="chatbot_main"/>
+        <field name="name">Sales · Hand off</field>
+        <field name="sequence">50</field>
+        <field name="step_type">handoff</field>
+        <field name="pos_x">1200</field>
+        <field name="pos_y">20</field>
+        <field name="message">Connecting you with our sales team now.</field>
+    </record>
+
+    <record id="chatbot_step_sales_lead" model="owa.chatbot.step">
+        <field name="chatbot_id" ref="chatbot_main"/>
+        <field name="name">Sales · Create lead</field>
+        <field name="sequence">40</field>
+        <field name="step_type">create_lead</field>
+        <field name="pos_x">920</field>
+        <field name="pos_y">20</field>
+        <field name="message">Perfect — I've logged your details. Our sales team will reach out shortly.</field>
+        <field name="next_step_id" ref="chatbot_step_sales_handoff"/>
+    </record>
+
+    <record id="chatbot_step_sales_email" model="owa.chatbot.step">
+        <field name="chatbot_id" ref="chatbot_main"/>
+        <field name="name">Sales · Ask email</field>
+        <field name="sequence">30</field>
+        <field name="step_type">question</field>
+        <field name="pos_x">640</field>
+        <field name="pos_y">20</field>
+        <field name="message">Thanks! What's the best email to reach you?</field>
+        <field name="answer_var">email</field>
+        <field name="answer_save_to">email</field>
+        <field name="next_step_id" ref="chatbot_step_sales_lead"/>
+    </record>
+
+    <record id="chatbot_step_sales_name" model="owa.chatbot.step">
+        <field name="chatbot_id" ref="chatbot_main"/>
+        <field name="name">Sales · Ask name</field>
+        <field name="sequence">20</field>
+        <field name="step_type">question</field>
+        <field name="pos_x">360</field>
+        <field name="pos_y">20</field>
+        <field name="message">Great! May I have your name?</field>
+        <field name="answer_var">name</field>
+        <field name="answer_save_to">name</field>
+        <field name="next_step_id" ref="chatbot_step_sales_email"/>
+    </record>
+
+    <!-- Support branch (declared handoff → question) -->
+    <record id="chatbot_step_support_handoff" model="owa.chatbot.step">
+        <field name="chatbot_id" ref="chatbot_main"/>
+        <field name="name">Support · Hand off</field>
+        <field name="sequence">70</field>
+        <field name="step_type">handoff</field>
+        <field name="pos_x">640</field>
+        <field name="pos_y">190</field>
+        <field name="message">Thanks — a support agent will take it from here.</field>
+    </record>
+
+    <record id="chatbot_step_support" model="owa.chatbot.step">
+        <field name="chatbot_id" ref="chatbot_main"/>
+        <field name="name">Support · Ask issue</field>
+        <field name="sequence">60</field>
+        <field name="step_type">question</field>
+        <field name="pos_x">360</field>
+        <field name="pos_y">190</field>
+        <field name="message">No problem — please describe your issue in a sentence or two.</field>
+        <field name="answer_var">issue</field>
+        <field name="answer_save_to">note</field>
+        <field name="next_step_id" ref="chatbot_step_support_handoff"/>
+    </record>
+
+    <!-- Menu step last (its options point at the branch steps above) -->
+    <record id="chatbot_step_menu" model="owa.chatbot.step">
+        <field name="chatbot_id" ref="chatbot_main"/>
+        <field name="name">Main Menu</field>
+        <field name="sequence">10</field>
+        <field name="step_type">menu</field>
+        <field name="pos_x">60</field>
+        <field name="pos_y">60</field>
+        <field name="message">How can we help? Reply with a number:</field>
+    </record>
+
+    <!-- Menu options -->
+    <record id="chatbot_opt_sales" model="owa.chatbot.menu.option">
+        <field name="step_id" ref="chatbot_step_menu"/>
+        <field name="sequence">10</field>
+        <field name="label">Sales</field>
+        <field name="keyword">1</field>
+        <field name="next_step_id" ref="chatbot_step_sales_name"/>
+    </record>
+
+    <record id="chatbot_opt_support" model="owa.chatbot.menu.option">
+        <field name="step_id" ref="chatbot_step_menu"/>
+        <field name="sequence">20</field>
+        <field name="label">Support</field>
+        <field name="keyword">2</field>
+        <field name="next_step_id" ref="chatbot_step_support"/>
+    </record>
+
+    <record id="chatbot_opt_hours" model="owa.chatbot.menu.option">
+        <field name="step_id" ref="chatbot_step_menu"/>
+        <field name="sequence">30</field>
+        <field name="label">Business hours</field>
+        <field name="keyword">3</field>
+        <field name="next_step_id" ref="chatbot_step_hours"/>
+    </record>
+
+    <!-- Set the entry point + fallback now that the steps exist -->
+    <record id="chatbot_main" model="owa.chatbot">
+        <field name="first_step_id" ref="chatbot_step_menu"/>
+        <field name="fallback_step_id" ref="chatbot_step_support_handoff"/>
+    </record>
+
+</odoo>

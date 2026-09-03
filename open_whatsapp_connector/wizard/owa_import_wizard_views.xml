@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="owa_import_wizard_form" model="ir.ui.view">
+        <field name="name">owa.import.wizard.form</field>
+        <field name="model">owa.import.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Import WhatsApp Data">
+                <div class="alert alert-success mb-3" role="status">
+                    <strong>Your WhatsApp is connected.</strong>
+                    Choose what to import into Odoo.
+                </div>
+                <group>
+                    <field name="wa_account_id" options="{'no_create': True, 'no_open': True}"/>
+                </group>
+                <group string="What to import">
+                    <field name="import_groups"/>
+                    <field name="import_contacts"/>
+                    <field name="import_history"/>
+                    <field name="import_communities"/>
+                    <field name="import_channels"/>
+                    <field name="import_avatars"/>
+                </group>
+                <p class="text-muted">
+                    Groups and contacts import instantly. <strong>Chat history</strong>
+                    (your conversations and recent messages) was captured when you
+                    scanned the QR, so it imports in the <strong>background</strong> with a
+                    progress bar — no extra step. <em>(If you linked this account earlier,
+                    importing history needs one more quick QR scan, because WhatsApp only
+                    resends history when a device is freshly linked.)</em> Watch progress
+                    under <em>Chats &gt; Import Jobs</em>. <strong>Contact photos</strong>
+                    download in the background after the import; group, community and
+                    channel photos import with their records.
+                </p>
+                <footer>
+                    <button name="action_import" type="object" string="Import"
+                            class="btn-primary" data-hotkey="q"/>
+                    <button string="Skip" class="btn-secondary" special="cancel" data-hotkey="x"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="owa_import_wizard_action" model="ir.actions.act_window">
+        <field name="name">Import WhatsApp Data</field>
+        <field name="res_model">owa.import.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <!-- The manual "Import Data" submenu was removed: the Import WhatsApp Data
+         dialog now AUTO-OPENS after every fresh QR scan (server flag
+         owa.account.import_prompt_pending + the always-mounted wa_import_prompt
+         widget), so a manual menu entry is redundant. The action above is kept
+         (re-usable / harmless). To watch import progress, use Chats > Import
+         Jobs. (#import_prompt_flag) -->
+
+</odoo>

@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="owa_import_job_form" model="ir.ui.view">
+        <field name="name">owa.import.job.form</field>
+        <field name="model">owa.import.job</field>
+        <field name="arch" type="xml">
+            <form string="WhatsApp History Import">
+                <header>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="queued,syncing,importing,done"/>
+                </header>
+                <sheet>
+                    <div class="alert alert-info" role="status" invisible="state != 'syncing'">
+                        Asking WhatsApp to stream your recent history… this can take a minute.
+                    </div>
+                    <div class="alert alert-success" role="status" invisible="state != 'done'">
+                        Import complete.
+                    </div>
+                    <div class="alert alert-danger" role="alert" invisible="state != 'error'">
+                        <field name="log" nolabel="1" readonly="1"/>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="account_id" readonly="1"/>
+                            <field name="progress" widget="progressbar"/>
+                        </group>
+                        <group>
+                            <field name="count_contacts" readonly="1"/>
+                            <field name="count_chats" readonly="1"/>
+                            <field name="count_messages" readonly="1"/>
+                            <field name="count_communities" readonly="1"/>
+                            <field name="count_channel_posts" readonly="1"/>
+                            <field name="count_avatars" readonly="1"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="owa_import_job_tree" model="ir.ui.view">
+        <field name="name">owa.import.job.tree</field>
+        <field name="model">owa.import.job</field>
+        <field name="arch" type="xml">
+            <list string="WhatsApp History Imports" create="false">
+                <field name="create_date"/>
+                <field name="account_id"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'done'"
+                       decoration-danger="state == 'error'"
+                       decoration-info="state in ('queued','syncing','importing')"/>
+                <field name="progress" widget="progressbar"/>
+                <field name="count_contacts"/>
+                <field name="count_chats"/>
+                <field name="count_messages"/>
+                <field name="count_communities" optional="show"/>
+                <field name="count_channel_posts" optional="show"/>
+                <field name="count_avatars" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="owa_import_job_action" model="ir.actions.act_window">
+        <field name="name">Import Jobs</field>
+        <field name="res_model">owa.import.job</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'create': False}</field>
+    </record>
+
+    <menuitem id="menu_owa_import_jobs"
+              name="Import Jobs"
+              parent="menu_owa_chats"
+              action="owa_import_job_action"
+              sequence="36"/>
+
+</odoo>

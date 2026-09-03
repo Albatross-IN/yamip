@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ================================================================ -->
+    <!-- WhatsApp Status screen: My Status (own posts) + Recent Updates    -->
+    <!-- (contacts' captured stories). Menus hang off menu_owa_send_status -->
+    <!-- (defined as a parent in views/owa_menus.xml, loaded before this). -->
+    <!-- ================================================================ -->
+
+    <!-- ── My Status: kanban over owa.status.broadcast ──────────────── -->
+    <record id="owa_status_broadcast_view_kanban" model="ir.ui.view">
+        <field name="name">owa.status.broadcast.kanban</field>
+        <field name="model">owa.status.broadcast</field>
+        <field name="arch" type="xml">
+            <kanban>
+                <field name="state"/>
+                <field name="media_type"/>
+                <field name="posted_at"/>
+                <field name="body_text"/>
+                <templates>
+                    <t t-name="card">
+                        <div class="oe_kanban_global_click p-2">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <strong>
+                                    <i t-att-class="record.media_type.raw_value == 'image' ? 'fa fa-image me-1' : record.media_type.raw_value == 'video' ? 'fa fa-video-camera me-1' : 'fa fa-font me-1'"/>
+                                    <field name="name"/>
+                                </strong>
+                                <field name="state" widget="badge"
+                                       decoration-success="state == 'posted'"
+                                       decoration-muted="state == 'expired'"
+                                       decoration-danger="state in ('revoked', 'error')"
+                                       decoration-info="state == 'draft'"
+                                       decoration-warning="state == 'queued'"/>
+                            </div>
+                            <field name="media_image" widget="image"
+                                   class="w-100 mt-1 rounded"
+                                   invisible="media_type == 'text'"/>
+                            <div class="text-muted small mt-1" t-out="record.body_text.value"/>
+                            <div class="text-muted small mt-1">
+                                Posted: <field name="posted_at"/>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- ── Recent Updates: contacts' captured statuses ─────────────── -->
+    <record id="owa_status_update_view_kanban" model="ir.ui.view">
+        <field name="name">owa.status.update.kanban</field>
+        <field name="model">owa.status.update</field>
+        <field name="arch" type="xml">
+            <kanban>
+                <field name="media_type"/>
+                <field name="viewed"/>
+                <field name="sender_name"/>
+                <field name="contact_number"/>
+                <field name="body_text"/>
+                <templates>
+                    <t t-name="card">
+                        <div class="oe_kanban_global_click">
+                            <field name="media_image" widget="image" class="w-100"
+                                   invisible="media_type != 'image'"/>
+                            <div class="text-center py-4 bg-light"
+                                 invisible="media_type != 'video'">
+                                <i class="fa fa-play-circle fa-3x text-muted"/>
+                            </div>
+                            <div class="p-2">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <strong t-out="record.sender_name.value or record.contact_number.value"/>
+                                    <span class="badge text-bg-success" invisible="viewed">New</span>
+                                </div>
+                                <div class="text-muted small" t-out="record.body_text.value"/>
+                                <div class="text-muted small">
+                                    <field name="posted_at"/>
+                                </div>
+                                <div class="mt-2 d-flex gap-1">
+                                    <button name="action_reply" type="object"
+                                            class="btn btn-sm btn-secondary">
+                                        <i class="fa fa-reply"/> Reply
+                                    </button>
+                                    <button name="action_react" type="object"
+                                            class="btn btn-sm btn-secondary">
+                                        <i class="fa fa-smile-o"/> React
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="owa_status_update_view_list" model="ir.ui.view">
+        <field name="name">owa.status.update.list</field>
+        <field name="model">owa.status.update</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="posted_at"/>
+                <field name="sender_name"/>
+                <field name="contact_number"/>
+                <field name="media_type"/>
+                <field name="body_text"/>
+                <field name="viewed" widget="boolean_toggle"/>
+                <field name="expires_at"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="owa_status_update_view_form" model="ir.ui.view">
+        <field name="name">owa.status.update.form</field>
+        <field name="model">owa.status.update</field>
+        <field name="arch" type="xml">
+            <form string="Contact's Status">
+                <header>
+                    <button name="action_reply" type="object" string="Reply"
+                            class="btn-primary"/>
+                    <button name="action_react" type="object" string="React"/>
+                    <button name="action_mark_seen" type="object"
+                            string="Mark seen" invisible="viewed"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="wa_account_id"/>
+                            <field name="partner_id"/>
+                            <field name="contact_number"/>
+                            <field name="sender_name"/>
+                            <field name="media_type"/>
+                        </group>
+                        <group>
+                            <field name="posted_at"/>
+                            <field name="expires_at"/>
+                            <field name="viewed"/>
+                        </group>
+                    </group>
+                    <field name="media_image" widget="image"
+                           invisible="media_type != 'image'"/>
+                    <field name="body_text" readonly="1"/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_owa_status_update" model="ir.actions.act_window">
+        <field name="name">Recent Updates</field>
+        <field name="res_model">owa.status.update</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No status updates yet</p>
+            <p>
+                When <b>"Capture contacts' statuses"</b> is enabled on a
+                connected WhatsApp account (Configuration → Accounts →
+                Messaging &amp; Privacy), your contacts' Status updates
+                (Stories) appear here for 24 hours. You can view, reply and
+                react to them.
+            </p>
+        </field>
+    </record>
+
+    <!-- ── Reply / React wizard ─────────────────────────────────────── -->
+    <record id="owa_status_interact_wizard_view_form" model="ir.ui.view">
+        <field name="name">owa.status.interact.wizard.form</field>
+        <field name="model">owa.status.interact.wizard</field>
+        <field name="arch" type="xml">
+            <form string="WhatsApp Status">
+                <field name="mode" invisible="1"/>
+                <group>
+                    <field name="contact_display" readonly="1"/>
+                    <field name="reply_text" invisible="mode != 'reply'"
+                           required="mode == 'reply'"
+                           placeholder="Type your reply…"/>
+                    <field name="emoji" invisible="mode != 'react'"/>
+                </group>
+                <footer>
+                    <button name="action_confirm" type="object" string="Send"
+                            class="btn-primary"/>
+                    <button string="Cancel" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- ── Status submenus ──────────────────────────────────────────── -->
+    <menuitem id="menu_owa_status_my" name="My Status"
+              parent="menu_owa_send_status"
+              action="action_owa_status_broadcast" sequence="10"/>
+    <menuitem id="menu_owa_status_recent" name="Recent Updates"
+              parent="menu_owa_send_status"
+              action="action_owa_status_update" sequence="20"/>
+    <menuitem id="menu_owa_status_post" name="Post Status"
+              parent="menu_owa_send_status"
+              action="action_owa_status_send_wizard" sequence="30"/>
+</odoo>

@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="owa_cloud_template_view_list" model="ir.ui.view">
+        <field name="name">owa.cloud.template.list</field>
+        <field name="model">owa.cloud.template</field>
+        <field name="arch" type="xml">
+            <list string="WhatsApp Templates">
+                <field name="name"/>
+                <field name="lang_code"/>
+                <field name="category"/>
+                <field name="wa_account_id"/>
+                <field name="quality"/>
+                <field name="status" widget="badge"
+                       decoration-success="status == 'approved'"
+                       decoration-danger="status == 'rejected'"
+                       decoration-warning="status == 'pending'"
+                       decoration-muted="status == 'draft'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="owa_cloud_template_view_form" model="ir.ui.view">
+        <field name="name">owa.cloud.template.form</field>
+        <field name="model">owa.cloud.template</field>
+        <field name="arch" type="xml">
+            <form string="WhatsApp Template">
+                <header>
+                    <button name="action_submit" type="object"
+                            string="Submit to Meta" class="btn-primary"
+                            invisible="status not in ('draft', 'rejected')"/>
+                    <button name="action_sync" type="object"
+                            string="Sync Status"
+                            invisible="not wa_template_uid"/>
+                    <button name="action_edit_template" type="object"
+                            string="Edit on Meta"
+                            invisible="not wa_template_uid"
+                            help="Push the current content back to Meta as an edit (re-reviewed)."/>
+                    <button name="action_delete_template" type="object"
+                            string="Delete from Meta"
+                            invisible="not wa_template_uid"
+                            confirm="Delete this template from Meta? This cannot be undone."/>
+                    <field name="status" widget="statusbar"
+                           statusbar_visible="draft,pending,approved"/>
+                </header>
+                <sheet>
+                    <div class="row">
+                        <!-- ── Guided editor ─────────────────────────── -->
+                        <div class="col-12 col-lg-7">
+                            <div class="oe_title">
+                                <label for="name" string="Template Name"/>
+                                <h1><field name="name"
+                                           placeholder="e.g. Order Update — becomes order_update"/></h1>
+                            </div>
+                            <group>
+                                <field name="sample_pick"
+                                       readonly="status != 'draft'"/>
+                                <field name="category" widget="radio"
+                                       options="{'horizontal': True}"
+                                       help="Utility: order/delivery/account updates the customer expects.&#10;Marketing: promotions and offers (needs opt-out).&#10;Authentication: one-time passcodes."/>
+                                <field name="lang_code"
+                                       placeholder="en, en_US, hi, pt_BR…"/>
+                                <field name="wa_account_id"/>
+                            </group>
+                            <group string="Message">
+                                <field name="header_type"
+                                       help="An optional line above the message: bold text, or a picture/video/document sent with each message."/>
+                                <field name="header_text"
+                                       invisible="header_type != 'text'"
+                                       placeholder="e.g. Order update"/>
+                                <field name="body_text" nolabel="1" colspan="2"
+                                       placeholder="Hi {{1}}, your order {{2}} has shipped and should arrive by {{3}}.&#10;&#10;Type {{1}}, {{2}}… where a per-customer value goes — fill the grey Sample boxes below so Meta's reviewers see a realistic message."/>
+                                <field name="footer_text"
+                                       placeholder="Small grey line under the message (optional)"/>
+                            </group>
+                            <group string="Sample values"
+                                   invisible="not variable_ids">
+                                <div colspan="2" class="text-muted mb-2">
+                                    These rows appear automatically for every
+                                    placeholder in your text — just fill in a
+                                    realistic sample for each.
+                                </div>
+                                <field name="variable_ids" nolabel="1" colspan="2">
+                                    <list editable="bottom" create="false" delete="false">
+                                        <field name="component" readonly="1"
+                                               force_save="1"/>
+                                        <field name="index" readonly="1"
+                                               force_save="1"
+                                               string="Placeholder"/>
+                                        <field name="sample"
+                                               placeholder="e.g. Rahul / SO1234 / Friday"/>
+                                    </list>
+                                </field>
+                            </group>
+                            <group string="Buttons (optional)">
+                                <div colspan="2" class="text-muted mb-2">
+                                    Up to 10 buttons: quick replies the customer
+                                    taps to answer, a website link, or a call
+                                    button.
+                                </div>
+                                <field name="button_ids" nolabel="1" colspan="2">
+                                    <list editable="bottom">
+                                        <field name="button_type" string="Type"/>
+                                        <field name="text" string="Button label"/>
+                                        <field name="url"
+                                               invisible="button_type != 'url'"/>
+                                        <field name="phone_number"
+                                               invisible="button_type != 'phone_number'"/>
+                                    </list>
+                                </field>
+                            </group>
+                            <notebook>
+                                <page string="Meta / Technical" name="technical"
+                                      groups="base.group_no_one">
+                                    <group>
+                                        <field name="wa_template_uid" readonly="1"/>
+                                        <field name="quality" readonly="1"/>
+                                    </group>
+                                </page>
+                            </notebook>
+                        </div>
+                        <!-- ── Live preview + readiness ──────────────── -->
+                        <div class="col-12 col-lg-5">
+                            <div class="o_form_label mb-2">Customer sees</div>
+                            <field name="preview_html" widget="html"
+                                   readonly="1" nolabel="1"/>
+                            <div class="o_form_label mt-3 mb-2">Ready to submit?</div>
+                            <field name="submit_checklist" widget="html"
+                                   readonly="1" nolabel="1"/>
+                            <div class="alert alert-danger mt-2" role="alert"
+                                 invisible="not error_msg">
+                                <field name="error_msg" readonly="1" nolabel="1"/>
+                            </div>
+                        </div>
+                    </div>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="owa_cloud_template_action" model="ir.actions.act_window">
+        <field name="name">WhatsApp Templates</field>
+        <field name="res_model">owa.cloud.template</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Author a WhatsApp Cloud API template
+            </p>
+            <p>
+                Templates are required to message a contact outside the 24-hour
+                customer-service window. Submit them to Meta for approval, then
+                send approved templates from automations or the composer.
+            </p>
+        </field>
+    </record>
+
+    <menuitem id="menu_owa_cloud_templates"
+              name="Cloud Templates"
+              parent="open_whatsapp_connector.menu_owa_config"
+              action="owa_cloud_template_action"
+              sequence="31"/>
+</odoo>

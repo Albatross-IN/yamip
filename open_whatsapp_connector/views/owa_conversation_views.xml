@@ -1,0 +1,278 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ================================================================
+         WhatsApp Conversations — triage / assignment management view.
+         A friendly place (vs. the technical Discuss > Channels view) to
+         see WhatsApp conversations and set their Assignee. Works hand in
+         hand with the "WhatsApp Conversation Visibility = own agent"
+         setting: agents see their own + unassigned here and can claim the
+         queue; administrators reassign anyone.
+         ================================================================ -->
+
+    <!-- Kanban: one column per agent (drag a card to reassign). -->
+    <record id="owa_conversation_view_kanban" model="ir.ui.view">
+        <field name="name">owa.conversation.kanban</field>
+        <field name="model">discuss.channel</field>
+        <field name="arch" type="xml">
+            <!-- default_group_by=assignee_id => drag-to-assign is the primary
+                 gesture. The server write() guard still protects agents: a
+                 non-admin who drags a card to another agent's column (or to
+                 Unassigned) gets an AccessError; dragging to their own column
+                 is an allowed self-claim. group_create/edit/delete are off so
+                 nobody can spawn bogus assignee columns; create is off because
+                 conversations are born from inbound messages, not here. -->
+            <kanban default_group_by="assignee_id" create="false"
+                    group_create="false" group_edit="false" group_delete="false"
+                    quick_create="false">
+                <field name="name"/>
+                <field name="whatsapp_number"/>
+                <field name="wa_display_number"/>
+                <field name="whatsapp_kind"/>
+                <field name="assignee_id"/>
+                <field name="triage_state"/>
+                <field name="last_interest_dt"/>
+                <field name="sla_breached"/>
+                <field name="owa_account_id"/>
+                <templates>
+                    <t t-name="card">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <strong class="text-truncate" t-out="record.name.value"/>
+                            <field name="triage_state" widget="badge"
+                                   decoration-info="triage_state == 'unassigned'"
+                                   decoration-warning="triage_state == 'on_hold'"
+                                   decoration-success="triage_state == 'active'"
+                                   decoration-muted="triage_state == 'resolved'"/>
+                        </div>
+                        <!-- Show the phone only for 1:1 chats. Groups /
+                             communities / channels are identified by their
+                             name + type chip; their raw JID is internal. -->
+                        <div class="text-muted mt-1" t-if="record.wa_display_number.value">
+                            <i class="fa fa-whatsapp"/> <t t-out="record.wa_display_number.value"/>
+                        </div>
+                        <!-- Conversation type chip (Group / Community / Channel)
+                             so the kind is identifiable at a glance. DMs need no
+                             chip (they're the common case). -->
+                        <div class="mt-1"
+                             t-if="record.whatsapp_kind.raw_value and record.whatsapp_kind.raw_value != 'dm'">
+                            <field name="whatsapp_kind" widget="badge"
+                                   decoration-info="whatsapp_kind == 'group'"
+                                   decoration-primary="whatsapp_kind == 'community'"
+                                   decoration-warning="whatsapp_kind == 'channel'"/>
+                        </div>
+                        <!-- Account shown as a prominent chip: the same customer
+                             messaging two different business numbers makes two
+                             separate cards, distinguishable only by this account.
+                             A muted one-liner was too easy to miss. -->
+                        <div class="mt-1" t-if="record.owa_account_id.value">
+                            <span class="badge text-bg-light border text-truncate mw-100"
+                                  title="WhatsApp account (which of your numbers this conversation is on)">
+                                <i class="fa fa-server me-1"/><t t-out="record.owa_account_id.value"/>
+                            </span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mt-2">
+                            <span class="text-muted small" t-if="record.last_interest_dt.value">
+                                <i class="fa fa-clock-o"/>
+                                <t t-out="record.last_interest_dt.value"/>
+                            </span>
+                            <span t-if="record.sla_breached.raw_value"
+                                  class="badge text-bg-danger ms-auto me-1">
+                                <i class="fa fa-exclamation-triangle"/> SLA
+                            </span>
+                            <field name="assignee_id" widget="many2one_avatar_user"/>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="owa_conversation_view_list" model="ir.ui.view">
+        <field name="name">owa.conversation.list</field>
+        <field name="model">discuss.channel</field>
+        <field name="arch" type="xml">
+            <!-- editable="bottom": admins set the Assignee inline. Only
+                 assignee_id is left editable; every other column is readonly so
+                 the row can't be mass-edited into an inconsistent triage state.
+                 The server write() guard means an agent's inline edit can only
+                 self-claim — any other assignee raises AccessError. -->
+            <list string="WhatsApp Conversations" create="false" editable="bottom"
+                  decoration-danger="sla_breached"
+                  decoration-muted="triage_state == 'resolved'">
+                <header>
+                    <button name="action_assign_to_me" type="object"
+                            string="Assign to me" class="btn-primary"/>
+                    <button name="action_mark_resolved" type="object"
+                            string="Mark Resolved"/>
+                </header>
+                <field name="sla_breached" column_invisible="1"/>
+                <field name="name" string="Conversation" readonly="1"/>
+                <!-- Phone for 1:1 chats; blank for groups/channels (JID is internal). -->
+                <field name="wa_display_number" string="Number" readonly="1"/>
+                <field name="whatsapp_kind" string="Type" readonly="1" optional="show"/>
+                <field name="assignee_id" string="Assignee" widget="many2one_avatar_user"
+                       optional="show"/>
+                <field name="triage_state" widget="badge" readonly="1"
+                       decoration-info="triage_state == 'unassigned'"
+                       decoration-warning="triage_state == 'on_hold'"
+                       decoration-success="triage_state == 'active'"
+                       decoration-muted="triage_state == 'resolved'"/>
+                <field name="last_interest_dt" string="Last message"
+                       readonly="1" optional="show"/>
+                <!-- Editable: pick which connected WhatsApp account this
+                     conversation replies from (multi-account support). -->
+                <field name="owa_account_id" string="Account" optional="show"
+                       domain="[('session_state', '=', 'connected')]"
+                       options="{'no_create': True, 'no_open': True}"/>
+                <field name="wa_label_ids" widget="many2many_tags"
+                       options="{'color_field': 'color'}" optional="hide"/>
+                <field name="sla_due_at" string="SLA due" readonly="1" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="owa_conversation_view_form" model="ir.ui.view">
+        <field name="name">owa.conversation.form</field>
+        <field name="model">discuss.channel</field>
+        <field name="arch" type="xml">
+            <form string="WhatsApp Conversation" create="false">
+                <header>
+                    <button name="action_assign_to_me" type="object"
+                            string="Assign to me" class="btn-primary"
+                            invisible="assignee_id == uid"/>
+                    <button name="action_mark_resolved" type="object"
+                            string="Mark Resolved"
+                            invisible="triage_state == 'resolved'"/>
+                    <button name="action_reopen" type="object" string="Reopen"
+                            invisible="triage_state != 'resolved'"/>
+                    <button name="action_put_on_hold" type="object" string="Put on Hold"
+                            invisible="triage_state in ('on_hold', 'resolved')"/>
+                    <button name="action_open_in_discuss" type="object"
+                            string="Open Conversation" class="btn-secondary"
+                            icon="fa-whatsapp"/>
+                    <!-- clickable: lets the user move the conversation to ANY
+                         stage (e.g. On hold -> Active or -> Unassigned) by
+                         clicking the bar, not just via the buttons. The
+                         resolved_at timestamp is kept consistent server-side in
+                         discuss.channel.write(). -->
+                    <field name="triage_state" widget="statusbar"
+                           options="{'clickable': '1'}"
+                           statusbar_visible="unassigned,active,on_hold,resolved"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="assignee_id" widget="many2one_avatar_user"
+                                   domain="[('share', '=', False)]"
+                                   help="The agent who owns this conversation. In
+                                         'own agent' visibility mode, only this
+                                         agent (and administrators) can see it."/>
+                            <field name="wa_display_number" readonly="1"
+                                   invisible="not wa_display_number"/>
+                            <!-- Raw JID kept for support only (developer mode). -->
+                            <field name="whatsapp_number" readonly="1"
+                                   groups="base.group_no_one"/>
+                            <field name="whatsapp_partner_id" readonly="1"/>
+                            <!-- Editable: choose which connected account replies. -->
+                            <field name="owa_account_id"
+                                   domain="[('session_state', '=', 'connected')]"
+                                   options="{'no_create': True, 'no_open': True}"/>
+                        </group>
+                        <group>
+                            <field name="wa_label_ids" widget="many2many_tags"
+                                   options="{'color_field': 'color'}"/>
+                            <field name="last_interest_dt" string="Last message" readonly="1"/>
+                            <field name="assigned_at" readonly="1"/>
+                            <field name="sla_due_at" readonly="1"/>
+                            <field name="resolved_at" readonly="1"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="owa_conversation_view_search" model="ir.ui.view">
+        <field name="name">owa.conversation.search</field>
+        <field name="model">discuss.channel</field>
+        <field name="arch" type="xml">
+            <search string="WhatsApp Conversations">
+                <field name="name" string="Conversation"
+                       filter_domain="['|', ('name', 'ilike', self), ('whatsapp_number', 'ilike', self)]"/>
+                <field name="assignee_id"/>
+                <field name="owa_account_id"/>
+                <field name="wa_label_ids"/>
+                <separator/>
+                <filter name="my_conversations" string="My Conversations"
+                        domain="[('assignee_id', '=', uid)]"/>
+                <filter name="unassigned" string="Unassigned"
+                        domain="[('assignee_id', '=', False)]"/>
+                <separator/>
+                <!-- "All" carries an empty domain: toggling it alongside the
+                     default "Unresolved" (same OR-group) widens the result back
+                     to every conversation, resolved included. -->
+                <filter name="all" string="All" domain="[]"/>
+                <filter name="active" string="Active"
+                        domain="[('triage_state', '=', 'active')]"/>
+                <filter name="on_hold" string="On Hold"
+                        domain="[('triage_state', '=', 'on_hold')]"/>
+                <filter name="unresolved" string="Unresolved"
+                        domain="[('triage_state', '!=', 'resolved')]"/>
+                <filter name="resolved" string="Resolved"
+                        domain="[('triage_state', '=', 'resolved')]"/>
+                <separator/>
+                <filter name="sla_breached" string="SLA Breached"
+                        domain="[('sla_breached', '=', True)]"/>
+                <separator/>
+                <filter name="kind_group" string="Groups"
+                        domain="[('whatsapp_kind', '=', 'group')]"/>
+                <filter name="kind_community" string="Communities"
+                        domain="[('whatsapp_kind', '=', 'community')]"/>
+                <filter name="kind_channel" string="Channels"
+                        domain="[('whatsapp_kind', '=', 'channel')]"/>
+                <group>
+                    <filter name="group_assignee" string="Assignee"
+                            context="{'group_by': 'assignee_id'}"/>
+                    <filter name="group_triage" string="Triage"
+                            context="{'group_by': 'triage_state'}"/>
+                    <filter name="group_account" string="Account"
+                            context="{'group_by': 'owa_account_id'}"/>
+                    <filter name="group_kind" string="Type"
+                            context="{'group_by': 'whatsapp_kind'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_owa_conversations" model="ir.actions.act_window">
+        <field name="name">Conversations</field>
+        <field name="res_model">discuss.channel</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="domain">[('channel_type', '=', 'whatsapp')]</field>
+        <!-- Bind OUR kanban/list/form explicitly; discuss.channel has stock
+             views that would otherwise win the default lookup (showing just a
+             Name column). -->
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'kanban', 'view_id': ref('owa_conversation_view_kanban')}),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('owa_conversation_view_list')}),
+            (0, 0, {'view_mode': 'form', 'view_id': ref('owa_conversation_view_form')})]"/>
+        <field name="search_view_id" ref="owa_conversation_view_search"/>
+        <field name="context">{'search_default_unresolved': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No WhatsApp conversations yet</p>
+            <p>
+                WhatsApp conversations appear here as customers message you.
+                Set the <b>Assignee</b> to route a conversation to a specific
+                agent, or use <b>Assign to me</b> to pick one up from the queue.
+            </p>
+        </field>
+    </record>
+
+    <menuitem id="menu_owa_conversations"
+              name="Conversations"
+              parent="open_whatsapp_connector.menu_owa_root"
+              action="action_owa_conversations"
+              sequence="6"/>
+</odoo>

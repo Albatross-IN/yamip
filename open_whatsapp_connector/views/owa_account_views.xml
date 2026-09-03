@@ -1,0 +1,532 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Account Form View -->
+    <record id="owa_account_view_form" model="ir.ui.view">
+        <field name="name">owa.account.form</field>
+        <field name="model">owa.account</field>
+        <field name="arch" type="xml">
+            <form string="Open WhatsApp Connector Account">
+                <header>
+                    <!-- Account connection management is restricted to WhatsApp
+                         Administrators: regular agents must not be able to
+                         connect/disconnect/logout an account or stop the shared
+                         sidecar. (Settings admins imply group_owa_admin.) -->
+                    <!-- Connection management follows the server-side
+                         `_ensure_can_manage` guard (admin always; in self-service
+                         / own_team mode also the account owner & their Sales-Team
+                         leader) via the `user_can_manage` flag — so a self-service
+                         owner can connect/scan their OWN account, while regular
+                         agents in shared mode still cannot. -->
+                    <button name="button_connect" type="object" string="Connect"
+                            class="btn-primary"
+                            invisible="not user_can_manage or session_state in ('connected', 'qr_pending', 'connecting') or connection_type != 'qr'"/>
+                    <button name="button_refresh_status" type="object" string="Refresh Status"
+                            invisible="not user_can_manage or session_state == 'disconnected' or connection_type != 'qr'"/>
+                    <button name="button_disconnect" type="object" string="Disconnect"
+                            class="btn-warning"
+                            invisible="not user_can_manage or session_state != 'connected' or connection_type != 'qr'"/>
+                    <button name="button_logout" type="object" string="Logout"
+                            class="btn-danger"
+                            invisible="not user_can_manage or session_state == 'logged_out' or connection_type != 'qr'"
+                            confirm="This will delete the WhatsApp session. You will need to scan a new QR code. Continue?"/>
+                    <button name="button_test_connection" type="object" string="Test Connection"
+                            invisible="not user_can_manage or session_state == 'connected' or connection_type != 'qr'"/>
+                    <button name="button_start_sidecar" type="object" string="Start Sidecar"
+                            class="btn-success"
+                            groups="open_whatsapp_connector.group_owa_admin"
+                            invisible="sidecar_running or connection_type != 'qr'"/>
+                    <!-- Maintenance actions (Stop Sidecar / Run Diagnostics) live on
+                         the "Connection Health & Maintenance" section below, and
+                         "Resync Members" sits next to the Allowed Group field —
+                         the header only keeps the day-to-day lifecycle actions. -->
+                    <button name="action_verify_connection" type="object"
+                            string="Verify Connection" class="btn-primary"
+                            groups="open_whatsapp_connector.group_owa_admin"
+                            invisible="connection_type != 'cloud'"/>
+                    <button name="action_sync_templates" type="object"
+                            string="Sync Templates"
+                            groups="open_whatsapp_connector.group_owa_admin"
+                            invisible="connection_type != 'cloud'"/>
+                    <button name="action_approve" type="object" string="Approve"
+                            class="btn-primary" groups="open_whatsapp_connector.group_owa_admin"
+                            invisible="approval_state == 'approved'"/>
+                    <!-- Reject only matters while an account awaits review (the
+                         self-service approval flow) — hiding it on approved
+                         accounts prevents accidentally killing a live account. -->
+                    <button name="action_reject" type="object" string="Reject"
+                            groups="open_whatsapp_connector.group_owa_admin"
+                            invisible="approval_state != 'pending'"/>
+                    <field name="sidecar_running" invisible="1"/>
+                    <field name="user_can_manage" invisible="1"/>
+                    <field name="health_status" widget="badge"
+                           decoration-success="health_status == 'healthy'"
+                           decoration-warning="health_status == 'degraded'"
+                           decoration-danger="health_status == 'down'"
+                           decoration-info="health_status == 'unknown'"/>
+                    <field name="session_state" widget="statusbar"
+                           statusbar_visible="disconnected,qr_pending,connecting,connected"/>
+                    <field name="approval_state" widget="statusbar"
+                           statusbar_visible="pending,approved"/>
+                </header>
+                <sheet>
+                    <!-- Always-mounted, invisible: auto-opens the Import WhatsApp
+                         Data dialog once after a fresh QR connection. Must NOT be
+                         inside the QR div (which unmounts on connect) nor use
+                         invisible="1" (which would stop it mounting). (#import_prompt_flag) -->
+                    <field name="import_prompt_pending" widget="wa_import_prompt" nolabel="1"/>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="%(open_whatsapp_connector.owa_message_action)d"
+                                type="action" class="oe_stat_button" icon="fa-comments">
+                            <field name="message_count" widget="statinfo" string="Messages"/>
+                        </button>
+                    </div>
+                    <widget name="web_ribbon" title="Connected"
+                            bg_color="text-bg-success"
+                            invisible="session_state != 'connected'"/>
+                    <widget name="web_ribbon" title="Disconnected"
+                            bg_color="text-bg-danger"
+                            invisible="session_state not in ('disconnected', 'logged_out')"/>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="e.g. My WhatsApp"/>
+                        </h1>
+                        <field name="connection_type" widget="radio" options="{'horizontal': True}"/>
+                    </div>
+
+                    <!-- Approval warning — shown until an admin approves this account -->
+                    <div class="alert alert-warning" role="alert"
+                         invisible="approval_state == 'approved'">
+                        Pending administrator approval — this account cannot send or
+                        receive messages until approved.
+                    </div>
+
+                    <!-- Quick Start Guide (shown only for new/disconnected accounts) -->
+                    <div class="alert alert-info" role="alert"
+                         invisible="session_state in ('connected', 'qr_pending', 'connecting') or connection_type != 'qr'">
+                        <h4 class="alert-heading mb-3"><i class="fa fa-info-circle"/> Quick Start Guide</h4>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>Step 1:</strong> Give this account a name (e.g. "Sales WhatsApp")</p>
+                                <p><strong>Step 2:</strong> Make sure the Sidecar service is running.
+                                    Click <b>"Start Sidecar"</b> above if it's not running, or
+                                    click <b>"Test Connection"</b> to check.</p>
+                                <p><strong>Step 3:</strong> Pick a <b>Pairing Method</b> below
+                                    (Scan QR Code or Link with Code).</p>
+                            </div>
+                            <div class="col-md-6" invisible="pairing_method != 'qr'">
+                                <p><strong>Step 4:</strong> Click the <b>"Connect"</b> button above.
+                                    A QR code will appear below.</p>
+                                <p><strong>Step 5:</strong> Open WhatsApp on your phone:</p>
+                                <ul class="mb-2">
+                                    <li><b>Android:</b> Menu (3 dots) > Linked Devices > Link a Device</li>
+                                    <li><b>iPhone:</b> Settings > Linked Devices > Link a Device</li>
+                                </ul>
+                                <p><strong>Step 6:</strong> Scan the QR code with your phone camera.
+                                    The status will change to <b>"Connected"</b> automatically.</p>
+                            </div>
+                            <div class="col-md-6" invisible="pairing_method != 'code'">
+                                <p><strong>Step 4:</strong> Enter your WhatsApp phone number in
+                                    <b>Pairing Phone</b> (digits only, country code first) on the
+                                    <b>WhatsApp Profile &amp; Pairing</b> tab below.</p>
+                                <p><strong>Step 5:</strong> Click <b>"Request WhatsApp Pairing Code"</b>.
+                                    An 8-character code will appear in <b>Pairing Code</b>.</p>
+                                <p><strong>Step 6:</strong> Open WhatsApp on your phone:</p>
+                                <ul class="mb-2">
+                                    <li><b>Android:</b> Menu (3 dots) > Linked Devices > Link with phone number</li>
+                                    <li><b>iPhone:</b> Settings > Linked Devices > Link with phone number</li>
+                                </ul>
+                                <p><strong>Step 7:</strong> Enter the 8-character code shown in Odoo.
+                                    The status will change to <b>"Connected"</b> automatically.</p>
+                            </div>
+                        </div>
+                        <hr/>
+                        <p class="mb-0 text-muted">
+                            <i class="fa fa-lightbulb-o"/> <b>Tip:</b> The fields below are pre-filled with defaults.
+                            You usually don't need to change anything — just enter a name and pick a Pairing Method.
+                        </p>
+                    </div>
+
+                    <!-- Account-safety best practices (QR link uses the phone's
+                         WhatsApp session, so a flagged number is the user's own
+                         number). Shown during onboarding for QR accounts. -->
+                    <div class="alert alert-warning" role="alert"
+                         invisible="connection_type != 'qr'">
+                        <h4 class="alert-heading mb-2"><i class="fa fa-shield"/> Protect your number from bans</h4>
+                        <p class="mb-2">
+                            This links your own WhatsApp account, so keeping within WhatsApp's
+                            rules protects <b>your</b> number. A few habits go a long way:
+                        </p>
+                        <ul class="mb-2">
+                            <li><b>Use an established number.</b> Connect a number that has already
+                                been in normal WhatsApp use for a while. Brand-new SIMs / numbers
+                                are flagged far more quickly.</li>
+                            <li><b>Only message people who expect it.</b> Sending to people who did
+                                not opt in — or who don't know you — is the single biggest cause of a
+                                number being blocked. Keep messages relevant, expected and consented.</li>
+                            <li><b>Warm up gradually.</b> Start with modest volumes and ramp up over
+                                days, not minutes. The built-in rate limits and opt-in tracking
+                                (Settings → WhatsApp) help you stay within safe limits.</li>
+                        </ul>
+                        <p class="mb-0 text-muted">
+                            WhatsApp can restrict any number it considers spammy; that decision is
+                            theirs and outside this app's control.
+                        </p>
+                    </div>
+
+                    <!-- QR Code Section — shown prominently at the top while pairing,
+                         right where the Quick Start guide points. -->
+                    <group invisible="connection_type != 'qr' or pairing_method != 'qr' or session_state not in ('qr_pending', 'connecting')">
+                        <div class="text-center p-4" style="background: #f8f9fa; border-radius: 8px;">
+                            <h3><i class="fa fa-qrcode"/> Scan QR Code</h3>
+                            <p class="text-muted mb-3">
+                                Open WhatsApp on your phone > Linked Devices > Link a Device > Point camera here
+                            </p>
+                            <field name="qr_code_base64" widget="wa_qr_code" class="img-fluid"/>
+                            <p class="text-muted mt-3">
+                                <i class="fa fa-clock-o"/> The status changes to <b>Connected</b> automatically
+                                after you scan &#8212; no need to click again. If the QR expires (~20s),
+                                click <b>Connect</b> for a fresh one.
+                            </p>
+                        </div>
+                    </group>
+
+                    <!-- Connected info — only once the account is BOTH connected
+                         AND approved, so it never contradicts the pending-approval
+                         banner above (which says it cannot yet send/receive). -->
+                    <div class="alert alert-success" role="alert"
+                         invisible="session_state != 'connected' or connection_type != 'qr' or approval_state != 'approved'">
+                        <i class="fa fa-check-circle"/> <strong>Connected!</strong>
+                        This account is connected to WhatsApp and ready to send/receive messages.
+                        You can now send messages from Discuss, use the Chatter button (Shift+W) on any record,
+                        or set up Notification Rules for automatic messages.
+                    </div>
+
+                    <group>
+                        <group string="Connection Settings" name="connection"
+                               groups="open_whatsapp_connector.group_owa_admin"
+                               invisible="connection_type != 'qr'">
+                            <field name="sidecar_url" help="URL where the sidecar service is running. Default works for most setups."/>
+                            <field name="sidecar_api_key" password="True"
+                                   help="Optional security key. Leave empty if not configured in the sidecar."/>
+                            <field name="callback_url" widget="CopyClipboardChar"
+                                   help="Auto-generated. The sidecar uses this URL to send incoming messages to Odoo."/>
+                            <field name="webhook_secret" widget="CopyClipboardChar"
+                                   groups="open_whatsapp_connector.group_owa_admin"
+                                   help="Auto-generated secret to verify incoming webhooks. Do not change."/>
+                        </group>
+                        <group string="Official Cloud API" name="cloud_connection"
+                               invisible="connection_type != 'cloud'">
+                            <field name="cloud_phone_number_id"
+                                   help="Meta Phone Number ID of the sending WhatsApp Business number."/>
+                            <field name="cloud_waba_id"
+                                   help="WhatsApp Business Account ID — matches the inbound webhook entry.id."/>
+                            <field name="cloud_app_id"
+                                   help="Meta App ID — used for media upload sessions."/>
+                            <field name="cloud_app_secret" password="True"
+                                   groups="open_whatsapp_connector.group_owa_admin"
+                                   help="Meta App Secret — verifies the inbound webhook signature."/>
+                            <field name="cloud_access_token" password="True"
+                                   groups="open_whatsapp_connector.group_owa_admin"
+                                   help="Graph API bearer token. Use a system-user permanent token in production."/>
+                            <field name="cloud_api_version"
+                                   help="Meta Graph API version, e.g. v23.0."/>
+                            <field name="cloud_verify_token" readonly="1" widget="CopyClipboardChar"
+                                   help="Enter this in the Meta console webhook setup (GET verification)."/>
+                            <field name="cloud_callback_url" readonly="1" widget="CopyClipboardChar"
+                                   help="Register this URL in the Meta console as the webhook callback URL."/>
+                        </group>
+                        <group string="Account Settings">
+                            <field name="is_default"/>
+                            <field name="user_id"/>
+                            <field name="team_id"/>
+                            <field name="pairing_method" widget="radio" options="{'horizontal': True}"
+                                   invisible="connection_type != 'qr'"/>
+                            <field name="phone_number"
+                                   invisible="connection_type != 'qr'"
+                                   help="Automatically filled after connecting. This is the WhatsApp number linked to this account."/>
+                            <field name="allowed_company_ids" widget="many2many_tags"
+                                   help="Which companies can use this WhatsApp account. Leave default for single-company setups."/>
+                            <field name="notify_user_ids" widget="many2many_tags"
+                                   help="These users will see incoming WhatsApp messages in their Discuss inbox."/>
+                            <field name="allowed_group_id"
+                                   help="Everyone in this user group can see this account's WhatsApp conversations (in addition to the Users to Notify). Use the 'Resync Members' button to apply a new/expanded group to existing conversations."/>
+                            <div colspan="2" class="mt-1">
+                                <button name="action_owa_resync_members" type="object"
+                                        string="Resync Members" icon="fa-users"
+                                        class="btn-secondary btn-sm"
+                                        groups="open_whatsapp_connector.group_owa_admin"
+                                        help="Give every member of the Allowed Group (and the Users to Notify) access to this account's existing conversations."/>
+                            </div>
+                            <field name="debug_logging"
+                                   invisible="connection_type != 'qr'"
+                                   help="Enable to log all API calls to the sidecar. Useful for troubleshooting."/>
+                        </group>
+                    </group>
+
+                    <!-- Phase 4: messaging & privacy toggles -->
+                    <group string="Messaging &amp; Privacy">
+                        <group>
+                            <field name="stealth_mode"/>
+                            <field name="send_read_receipts"
+                                   invisible="stealth_mode"
+                                   help="Blue ticks. Forced off while Stealth mode is on."/>
+                            <field name="reply_to_mode"/>
+                        </group>
+                        <group>
+                            <field name="self_chat_mode"/>
+                            <field name="share_online_presence"
+                                   invisible="stealth_mode"
+                                   help="Marks your number 'online' so contacts' green presence dot works. Your number then shows as online to contacts. Ignored while Stealth mode is on."/>
+                            <field name="capture_contact_statuses"/>
+                            <field name="status_mark_seen"
+                                   invisible="not capture_contact_statuses"/>
+                            <field name="sync_own_statuses"/>
+                            <separator string="Office Hours (after-hours automation)"/>
+                            <label for="office_hours_start"/>
+                            <div class="o_row">
+                                <field name="office_hours_start" widget="float_time"/>
+                                <span class="mx-2">to</span>
+                                <field name="office_hours_end" widget="float_time"/>
+                            </div>
+                            <field name="office_days"/>
+                            <field name="office_tz"/>
+                        </group>
+                    </group>
+
+                    <!-- Phase 3: auto-reaction (👀 acknowledgement) controls -->
+                    <group string="Auto-reactions (👀 acknowledgement)"
+                           invisible="connection_type != 'qr'">
+                        <div colspan="2" class="text-muted mb-2">
+                            When enabled, the connector reacts to each incoming
+                            message with an emoji (👀 by default) to signal
+                            "seen". Note: reacting marks the message as read, so
+                            your phone's WhatsApp may stop notifying you about
+                            it — keep this Off if you rely on phone notifications.
+                        </div>
+                        <group>
+                            <field name="reaction_level"/>
+                            <field name="ack_reaction_emoji"
+                                   invisible="reaction_level == 'off'"
+                                   placeholder="👀"/>
+                        </group>
+                        <group>
+                            <field name="ack_reaction_dm"
+                                   invisible="reaction_level == 'off'"/>
+                            <field name="ack_reaction_group"
+                                   invisible="reaction_level == 'off'"/>
+                            <field name="remove_ack_after_reply"
+                                   invisible="reaction_level == 'off'"/>
+                        </group>
+                    </group>
+
+                    <!-- Phase 21: missed-call auto-reply -->
+                    <group string="Incoming calls" col="2">
+                        <field name="auto_reply_on_missed_call"/>
+                        <field name="missed_call_reply_template"
+                               placeholder="Sorry I missed your call! Please send a message and I'll respond shortly."
+                               invisible="not auto_reply_on_missed_call"/>
+                    </group>
+
+                    <!-- Phase 5/6: DM access control + group support -->
+                    <group>
+                        <group string="DM Access Control">
+                            <field name="dm_policy" widget="radio"/>
+                            <field name="allowlist_entry_ids"
+                                   invisible="dm_policy != 'allowlist'"/>
+                        </group>
+                        <group string="Group Support &amp; Mentions">
+                            <field name="group_policy" widget="radio"/>
+                            <field name="group_allow_jids"
+                                   invisible="group_policy != 'allowlist'"
+                                   placeholder="120363025246125678@g.us (one JID per line)"/>
+                            <field name="group_intro_message"
+                                   placeholder="Welcome! This group is monitored from Odoo."/>
+                        </group>
+                    </group>
+
+                    <!-- Phase 26A: outbound throttling (anti-ban) -->
+                    <group string="Outbound Throttling (anti-ban)">
+                        <group>
+                            <field name="throttle_preset"/>
+                            <field name="throttle_backoff_until" readonly="1"
+                                   invisible="not throttle_backoff_until"/>
+                        </group>
+                        <group>
+                            <field name="messages_per_minute"/>
+                            <field name="messages_per_hour"/>
+                            <field name="messages_per_day"/>
+                            <field name="owa_sent_last_minute" readonly="1"/>
+                            <field name="owa_sent_last_hour" readonly="1"/>
+                            <field name="owa_sent_last_day" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <!-- Outbound media & text tuning -->
+                    <group string="Outbound Media &amp; Text">
+                        <group>
+                            <field name="media_max_mb"/>
+                        </group>
+                        <group>
+                            <field name="text_chunk_limit"/>
+                            <field name="chunk_mode"/>
+                        </group>
+                    </group>
+
+                    <!-- Admin maintenance actions, moved out of the header so the
+                         top bar keeps only day-to-day lifecycle buttons. -->
+                    <group string="Connection Health &amp; Maintenance"
+                           groups="open_whatsapp_connector.group_owa_admin"
+                           invisible="connection_type != 'qr'">
+                        <div colspan="2" class="d-flex flex-wrap gap-2">
+                            <button name="action_run_diagnostics" type="object"
+                                    string="Run Diagnostics" icon="fa-stethoscope"
+                                    class="btn-secondary"/>
+                            <button name="button_stop_sidecar" type="object"
+                                    string="Stop Sidecar" class="btn-danger"
+                                    invisible="not sidecar_running"
+                                    confirm="This will stop the sidecar service for all accounts. Continue?"/>
+                        </div>
+                    </group>
+
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- Account List View -->
+    <record id="owa_account_view_list" model="ir.ui.view">
+        <field name="name">owa.account.list</field>
+        <field name="model">owa.account</field>
+        <field name="arch" type="xml">
+            <list string="WhatsApp Accounts">
+                <field name="name"/>
+                <field name="phone_number"/>
+                <field name="session_state" widget="badge"
+                       decoration-success="session_state == 'connected'"
+                       decoration-warning="session_state in ('qr_pending', 'connecting')"
+                       decoration-danger="session_state in ('disconnected', 'logged_out')"/>
+                <field name="sidecar_url"/>
+                <field name="user_id" optional="show"/>
+                <field name="team_id" optional="show"/>
+                <field name="approval_state" widget="badge" optional="show"
+                       decoration-success="approval_state == 'approved'"
+                       decoration-warning="approval_state == 'pending'"
+                       decoration-danger="approval_state == 'rejected'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Account Kanban View -->
+    <record id="owa_account_view_kanban" model="ir.ui.view">
+        <field name="name">owa.account.kanban</field>
+        <field name="model">owa.account</field>
+        <field name="arch" type="xml">
+            <kanban>
+                <field name="name"/>
+                <field name="phone_number"/>
+                <field name="session_state"/>
+                <field name="sidecar_running"/>
+                <field name="connection_type"/>
+                <field name="is_default"/>
+                <templates>
+                    <t t-name="card">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center gap-2">
+                                <field name="image_128" widget="image"
+                                       options="{'img_class': 'rounded-circle object-fit-cover'}"
+                                       style="width:40px;height:40px;"/>
+                                <strong t-out="record.name.value"/>
+                            </div>
+                            <div class="d-flex align-items-center gap-1">
+                                <span t-if="record.is_default.raw_value"
+                                      class="badge text-bg-info"
+                                      title="Deleted accounts' conversations are reassigned here; also the fallback reply account.">
+                                    <i class="fa fa-star"/> Default
+                                </span>
+                                <field name="session_state" widget="badge"
+                                       decoration-success="session_state == 'connected'"
+                                       decoration-warning="session_state in ('qr_pending', 'connecting')"
+                                       decoration-danger="session_state in ('disconnected', 'logged_out')"/>
+                            </div>
+                        </div>
+                        <div class="text-muted mt-1" t-if="record.phone_number.value">
+                            <i class="fa fa-phone"/> <t t-out="record.phone_number.value"/>
+                        </div>
+                        <div class="text-muted mt-1">
+                            <i class="fa fa-cloud" t-if="record.connection_type.raw_value == 'cloud'"/>
+                            <i class="fa fa-qrcode" t-if="record.connection_type.raw_value == 'qr'"/>
+                            <t t-out="record.connection_type.value"/>
+                        </div>
+                        <div class="mt-2" t-if="record.connection_type.raw_value == 'qr'">
+                            <span t-if="record.sidecar_running.raw_value"
+                                  class="badge text-bg-success">
+                                <i class="fa fa-server"/> Sidecar Running
+                            </span>
+                            <span t-if="!record.sidecar_running.raw_value"
+                                  class="badge text-bg-danger">
+                                <i class="fa fa-server"/> Sidecar Stopped
+                            </span>
+                        </div>
+                        <div class="mt-2 d-flex gap-1 flex-wrap">
+                            <!-- QR transport controls. groups= must sit on each
+                                 <button> (a kanban card ignores groups= on a
+                                 wrapping <div>); the methods are also guarded
+                                 server-side via _ensure_owa_admin(). -->
+                            <button name="button_connect" type="object"
+                                    groups="open_whatsapp_connector.group_owa_admin"
+                                    class="btn btn-sm btn-primary"
+                                    invisible="connection_type != 'qr' or session_state in ('connected', 'qr_pending', 'connecting')">
+                                <i class="fa fa-plug"/> Connect
+                            </button>
+                            <button name="button_disconnect" type="object"
+                                    groups="open_whatsapp_connector.group_owa_admin"
+                                    class="btn btn-sm btn-warning"
+                                    invisible="connection_type != 'qr' or session_state != 'connected'">
+                                <i class="fa fa-power-off"/> Disconnect
+                            </button>
+                            <button name="button_refresh_status" type="object"
+                                    groups="open_whatsapp_connector.group_owa_admin"
+                                    class="btn btn-sm btn-secondary"
+                                    invisible="connection_type != 'qr' or session_state in ('disconnected', 'logged_out')">
+                                <i class="fa fa-refresh"/> Refresh
+                            </button>
+                            <button name="button_start_sidecar" type="object"
+                                    groups="open_whatsapp_connector.group_owa_admin"
+                                    class="btn btn-sm btn-success"
+                                    invisible="connection_type != 'qr' or sidecar_running">
+                                <i class="fa fa-play"/> Start Sidecar
+                            </button>
+                            <!-- Cloud transport control -->
+                            <button name="action_verify_connection" type="object"
+                                    groups="open_whatsapp_connector.group_owa_admin"
+                                    class="btn btn-sm btn-primary"
+                                    invisible="connection_type != 'cloud'">
+                                <i class="fa fa-plug"/> Verify Connection
+                            </button>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="owa_account_action" model="ir.actions.act_window">
+        <field name="name">WhatsApp Accounts</field>
+        <field name="res_model">owa.account</field>
+        <field name="view_mode">kanban,list,form</field>
+        <!-- Defense-in-depth: only WhatsApp Administrators can open the account
+             views (which expose connection config + the gated credential
+             fields). Agents reach accounts only indirectly via channel links. -->
+        <field name="group_ids" eval="[(4, ref('open_whatsapp_connector.group_owa_admin'))]"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first WhatsApp account
+            </p>
+            <p>
+                Connect to WhatsApp by scanning a QR code — no Meta Business API needed.
+            </p>
+        </field>
+    </record>
+</odoo>

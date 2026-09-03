@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Phone register / verify-code / set-PIN (opened from the account form) -->
+    <record id="owa_cloud_phone_wizard_view_form" model="ir.ui.view">
+        <field name="name">owa.cloud.phone.wizard.form</field>
+        <field name="model">owa.cloud.phone.wizard</field>
+        <field name="arch" type="xml">
+            <form string="WhatsApp Cloud — Phone">
+                <sheet>
+                    <group>
+                        <field name="account_id" readonly="1"/>
+                        <field name="mode"/>
+                        <field name="code"
+                               invisible="mode != 'verify_code'"
+                               required="mode == 'verify_code'"/>
+                        <field name="pin"
+                               invisible="mode not in ('register','set_pin')"
+                               required="mode in ('register','set_pin')"
+                               placeholder="6 digits"/>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_apply" type="object" string="Apply"
+                            class="btn-primary"/>
+                    <button special="cancel" string="Cancel"
+                            class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Interactive message composer (buttons / list / cta / location / flow) -->
+    <record id="owa_cloud_send_wizard_view_form" model="ir.ui.view">
+        <field name="name">owa.cloud.send.wizard.form</field>
+        <field name="model">owa.cloud.send.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Send Interactive Message">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="account_id"/>
+                            <field name="to_number"
+                                   placeholder="e.g. 919999999999"/>
+                            <field name="kind"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="body_text"
+                               placeholder="Message shown above the buttons/menu"/>
+                        <field name="footer_text"
+                               invisible="kind == 'location_request'"/>
+                    </group>
+                    <group string="Buttons" invisible="kind != 'buttons'">
+                        <field name="buttons_text" nolabel="1"
+                               placeholder="One button title per line (max 3)"/>
+                    </group>
+                    <group string="List" invisible="kind != 'list'">
+                        <field name="list_button"/>
+                        <field name="list_rows_text"
+                               placeholder="Row title | optional description (one per line)"/>
+                    </group>
+                    <group string="URL button" invisible="kind != 'cta_url'">
+                        <field name="cta_display_text"/>
+                        <field name="cta_url"/>
+                    </group>
+                    <group string="Flow" invisible="kind != 'flow'">
+                        <field name="flow_id"/>
+                        <field name="flow_cta"/>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_send" type="object" string="Send"
+                            class="btn-primary"/>
+                    <button special="cancel" string="Cancel"
+                            class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="owa_cloud_send_wizard_action" model="ir.actions.act_window">
+        <field name="name">Send Interactive Message</field>
+        <field name="res_model">owa.cloud.send.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <menuitem id="menu_owa_cloud_send"
+              name="Interactive Message"
+              parent="open_whatsapp_connector.menu_owa_config"
+              action="owa_cloud_send_wizard_action"
+              sequence="33"/>
+
+</odoo>

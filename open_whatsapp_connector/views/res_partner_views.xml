@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_partner_view_form_inherit_owa" model="ir.ui.view">
+        <field name="name">res.partner.form.inherit.owa</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button class="oe_stat_button" type="action" icon="fa-whatsapp"
+                        name="%(open_whatsapp_connector.owa_message_action)d"
+                        context="{'search_default_mobile_number': phone}"
+                        invisible="owa_channel_count == 0">
+                    <field name="owa_channel_count" widget="statinfo" string="WhatsApp Chats"/>
+                </button>
+                <!-- Phase H — always-visible opener. Opens the live WhatsApp
+                     conversation in Discuss (find-or-create), not a one-off
+                     compose dialog, so the agent lands in the real-time chat.
+                     (#wa-open-chat) -->
+                <button class="oe_stat_button" type="object" icon="fa-whatsapp"
+                        name="action_open_wa_discuss"
+                        invisible="not phone">
+                    <div class="o_stat_info">
+                        <span class="o_stat_text">Open</span>
+                        <span class="o_stat_text">WhatsApp</span>
+                    </div>
+                </button>
+            </xpath>
+            <!-- Phase 26: opt-in tracking — the fields existed and were
+                 auto-stamped on write() but were not visible anywhere, so
+                 "opt-in tracking on every contact" had no UI. (#throttle) -->
+            <xpath expr="//notebook" position="inside">
+                <page string="WhatsApp" name="owa_whatsapp">
+                    <group>
+                        <group string="Marketing Opt-in">
+                            <field name="wa_is_opted_in"/>
+                            <field name="wa_opt_in_at" readonly="1"
+                                   invisible="not wa_is_opted_in"/>
+                            <field name="wa_opt_in_source" readonly="1"
+                                   invisible="not wa_is_opted_in"/>
+                        </group>
+                        <group string="Campaigns">
+                            <field name="wa_campaign_done" readonly="1"/>
+                            <field name="wa_campaign_last_id" readonly="1"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Drip-campaign progress is visible from Contacts too: while a drip is
+         running these two filters split the audience into done / still queued. -->
+    <record id="res_partner_view_search_inherit_owa" model="ir.ui.view">
+        <field name="name">res.partner.search.inherit.owa</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_res_partner_filter"/>
+        <field name="arch" type="xml">
+            <filter name="type_company" position="after">
+                <separator/>
+                <filter name="owa_campaign_done" string="WhatsApp Campaign Sent"
+                        domain="[('wa_campaign_done', '=', True)]"/>
+                <filter name="owa_campaign_pending" string="WhatsApp Campaign Pending"
+                        domain="[('wa_campaign_done', '=', False), ('phone', '!=', False)]"/>
+            </filter>
+        </field>
+    </record>
+</odoo>

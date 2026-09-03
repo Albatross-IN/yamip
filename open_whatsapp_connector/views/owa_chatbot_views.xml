@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Chatbot Form View -->
+    <record id="owa_chatbot_form" model="ir.ui.view">
+        <field name="name">owa.chatbot.form</field>
+        <field name="model">owa.chatbot</field>
+        <field name="arch" type="xml">
+            <form string="WhatsApp Chatbot">
+                <header>
+                    <button name="action_open_designer" type="object" string="Design Flow"
+                            class="btn-primary" icon="fa-sitemap"/>
+                    <button name="action_duplicate" type="object" string="Save as New Bot"
+                            class="btn-secondary" icon="fa-copy"/>
+                </header>
+                <sheet>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger"
+                            invisible="active"/>
+                    <div class="oe_title">
+                        <h1><field name="name" placeholder="e.g. Customer Support Bot"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="wa_account_id"/>
+                            <field name="session_timeout_minutes"/>
+                            <field name="typing_indicator"/>
+                            <field name="active"/>
+                            <field name="active_outside_office_hours"/>
+                        </group>
+                        <group>
+                            <field name="welcome_message" placeholder="Hello! How can I help you today?"/>
+                            <field name="first_step_id"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Steps" name="steps">
+                            <div class="alert alert-info" role="status">
+                                <i class="fa fa-info-circle"/>
+                                Tip: use <b>Design Flow</b> (top) to build the conversation visually —
+                                drag steps and draw the links between them.
+                            </div>
+                            <field name="step_ids">
+                                <list>
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="name"/>
+                                    <field name="step_type"/>
+                                    <field name="message" optional="hide"/>
+                                    <field name="next_step_id" optional="hide"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Fallback &amp; Keywords" name="fallback">
+                            <group>
+                                <group string="When the bot can't understand">
+                                    <field name="fallback_max_retries"/>
+                                    <field name="fallback_step_id"/>
+                                </group>
+                                <group string="Global keywords">
+                                    <field name="keyword_restart"/>
+                                    <field name="keyword_agent"/>
+                                </group>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- Chatbot List View -->
+    <record id="owa_chatbot_list" model="ir.ui.view">
+        <field name="name">owa.chatbot.list</field>
+        <field name="model">owa.chatbot</field>
+        <field name="arch" type="xml">
+            <list string="WhatsApp Chatbots" decoration-muted="not active">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="wa_account_id"/>
+                <field name="step_count" optional="show"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Chatbot Search View -->
+    <record id="owa_chatbot_search" model="ir.ui.view">
+        <field name="name">owa.chatbot.search</field>
+        <field name="model">owa.chatbot</field>
+        <field name="arch" type="xml">
+            <search string="Chatbots">
+                <field name="name"/>
+                <field name="wa_account_id"/>
+                <filter name="running" string="Running" domain="[('active', '=', True)]"/>
+                <filter name="templates" string="Templates / Inactive"
+                        domain="[('active', '=', False)]"/>
+                <group>
+                    <filter name="group_account" string="WhatsApp Account"
+                            context="{'group_by': 'wa_account_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Chatbot Step Form View -->
+    <record id="owa_chatbot_step_form" model="ir.ui.view">
+        <field name="name">owa.chatbot.step.form</field>
+        <field name="model">owa.chatbot.step</field>
+        <field name="arch" type="xml">
+            <form string="Chatbot Step">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="step_type"/>
+                            <field name="sequence"/>
+                        </group>
+                        <group>
+                            <field name="message" placeholder="Message / prompt to send at this step..."
+                                   invisible="step_type == 'end'"/>
+                            <field name="next_step_id"
+                                   invisible="step_type not in ('message', 'question', 'create_lead')"
+                                   domain="[('chatbot_id', '=', parent.chatbot_id)]"/>
+                        </group>
+                    </group>
+                    <group string="Question" invisible="step_type != 'question'">
+                        <field name="answer_var" placeholder="e.g. email"/>
+                        <field name="answer_save_to"/>
+                        <field name="answer_validation"/>
+                    </group>
+                    <group string="Hand off to a human"
+                           invisible="step_type not in ('handoff', 'route_to_user')">
+                        <field name="handoff_user_id"
+                               invisible="step_type == 'route_to_user'"/>
+                        <field name="handoff_team_id"
+                               invisible="step_type == 'route_to_user'"/>
+                        <field name="target_user_id"
+                               invisible="step_type != 'route_to_user'"/>
+                    </group>
+                    <field name="option_ids" invisible="step_type != 'menu'">
+                        <list editable="bottom">
+                            <field name="sequence" widget="handle"/>
+                            <field name="label"/>
+                            <field name="keyword"/>
+                            <field name="next_step_id"
+                                   domain="[('chatbot_id', '=', parent.chatbot_id)]"/>
+                        </list>
+                    </field>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Chatbot Session List View -->
+    <record id="owa_chatbot_session_list" model="ir.ui.view">
+        <field name="name">owa.chatbot.session.list</field>
+        <field name="model">owa.chatbot.session</field>
+        <field name="arch" type="xml">
+            <list string="Chatbot Sessions" decoration-muted="state in ('completed', 'expired')">
+                <field name="chatbot_id"/>
+                <field name="phone_number"/>
+                <field name="current_step_id"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'active'"
+                       decoration-info="state == 'routed'"
+                       decoration-muted="state in ('completed', 'expired')"/>
+                <field name="last_activity"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Actions -->
+    <record id="owa_chatbot_action" model="ir.actions.act_window">
+        <field name="name">Chatbots</field>
+        <field name="res_model">owa.chatbot</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="owa_chatbot_search"/>
+        <!-- active_test off so the shipped (inactive) templates are visible;
+             users pick one, assign an account and activate — or Save as New Bot. -->
+        <field name="context">{'active_test': False}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Pick a ready-made bot template, or create your own
+            </p>
+            <p>
+                This app ships with ready-to-use chatbots (Main Menu, Lead
+                Capture, Support Triage, FAQ). Open one and click
+                <b>Design Flow</b> to see it visually, <b>Save as New Bot</b>
+                to edit your own copy, or assign a WhatsApp account and tick
+                <b>Active</b> to switch it on. Bots can send messages, show
+                menus, ask questions, create CRM leads and hand off to a human.
+            </p>
+        </field>
+    </record>
+
+    <record id="owa_chatbot_session_action" model="ir.actions.act_window">
+        <field name="name">Chatbot Sessions</field>
+        <field name="res_model">owa.chatbot.session</field>
+        <field name="view_mode">list</field>
+    </record>
+
+</odoo>

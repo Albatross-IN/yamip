@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="open_whatsapp_connector.OwaChatbotDesigner">
+        <div class="owa_fd">
+            <!-- ── Toolbar ─────────────────────────────────────────────── -->
+            <div class="owa_fd_toolbar">
+                <button class="btn btn-secondary btn-sm" t-on-click="backToBot">
+                    <i class="fa fa-arrow-left"/> Back
+                </button>
+                <span class="owa_fd_title" t-esc="state.bot.name"/>
+                <div class="owa_fd_add">
+                    <span class="text-muted me-1">Add:</span>
+                    <button class="btn btn-light btn-sm" t-on-click="() => this.createStep('message')"><i class="fa fa-comment"/> Message</button>
+                    <button class="btn btn-light btn-sm" t-on-click="() => this.createStep('menu')"><i class="fa fa-list-ul"/> Menu</button>
+                    <button class="btn btn-light btn-sm" t-on-click="() => this.createStep('question')"><i class="fa fa-question-circle"/> Question</button>
+                    <button class="btn btn-light btn-sm" t-on-click="() => this.createStep('handoff')"><i class="fa fa-user"/> Hand off</button>
+                    <button class="btn btn-light btn-sm" t-on-click="() => this.createStep('create_lead')"><i class="fa fa-star"/> Lead</button>
+                    <button class="btn btn-light btn-sm" t-on-click="() => this.createStep('end')"><i class="fa fa-flag-checkered"/> End</button>
+                </div>
+                <div class="owa_fd_spacer"/>
+                <span t-if="state.problems.length" class="badge text-bg-warning owa_fd_probbadge"
+                      t-att-title="state.problems.join('\n')">
+                    <i class="fa fa-exclamation-triangle"/> <t t-esc="state.problems.length"/> issue(s)
+                </span>
+                <span t-else="" class="badge text-bg-success"><i class="fa fa-check"/> OK</span>
+                <button class="btn btn-primary btn-sm" t-on-click="startTest">
+                    <i class="fa fa-play"/> Test
+                </button>
+            </div>
+
+            <!-- ── Problems banner ─────────────────────────────────────── -->
+            <div t-if="state.problems.length" class="owa_fd_problems alert alert-warning">
+                <ul class="mb-0">
+                    <li t-foreach="state.problems" t-as="p" t-key="p_index" t-esc="p"/>
+                </ul>
+            </div>
+
+            <div class="owa_fd_body">
+                <!-- ── Canvas ──────────────────────────────────────────── -->
+                <div class="owa_fd_canvas" t-ref="canvas"
+                     t-on-pointerdown="onCanvasPointerDown" t-on-wheel="onWheel">
+                    <div t-if="state.loading" class="owa_fd_loading">
+                        <i class="fa fa-spinner fa-spin"/> Loading…
+                    </div>
+                    <div class="owa_fd_world" t-att-style="worldStyle">
+                        <!-- edges -->
+                        <svg class="owa_fd_edges">
+                            <path t-foreach="edges" t-as="e" t-key="e.key"
+                                  t-att-d="edgePath(e)" class="owa_fd_edge"/>
+                            <path t-if="state.linking" t-att-d="linkingPath" class="owa_fd_edge owa_fd_edge_live"/>
+                        </svg>
+                        <!-- nodes -->
+                        <div t-foreach="state.nodes" t-as="node" t-key="node.id"
+                             class="owa_fd_node"
+                             t-att-class="{ 'owa_fd_sel': node.id === state.selectedId }"
+                             t-att-style="nodeStyle(node)"
+                             t-on-pointerdown="(ev) => this.onNodePointerDown(ev, node)">
+                            <!-- input port -->
+                            <div class="owa_fd_port owa_fd_in" t-att-style="inPortStyle(node)"/>
+                            <!-- header -->
+                            <div class="owa_fd_head">
+                                <i class="fa" t-att-class="stepIcon(node.step_type)"/>
+                                <span class="owa_fd_name" t-esc="node.name"/>
+                                <i class="fa fa-star owa_fd_first"
+                                   t-att-class="{ 'owa_fd_first_on': node.id === state.bot.first_step_id }"
+                                   title="Set as entry point"
+                                   t-on-pointerdown.stop="() => this.setFirstStep(node.id)"/>
+                            </div>
+                            <!-- body -->
+                            <t t-if="node.step_type === 'menu'">
+                                <div class="owa_fd_opt" t-foreach="node.options" t-as="opt" t-key="opt.id"
+                                     t-att-style="optRowStyle()">
+                                    <span class="owa_fd_optnum" t-esc="opt_index + 1 + '.'"/>
+                                    <span class="owa_fd_optlbl" t-esc="opt.label"/>
+                                    <div class="owa_fd_port owa_fd_out" t-att-style="optPortStyle(opt_index)"
+                                         t-on-pointerdown="(ev) => this.onPortPointerDown(ev, node, opt.id)"/>
+                                </div>
+                            </t>
+                            <t t-else="">
+                                <div class="owa_fd_snip" t-esc="node.message || stepLabel(node.step_type)"/>
+                                <div t-if="typeMeta(node.step_type).out === 'single'"
+                                     class="owa_fd_port owa_fd_out" t-att-style="outPortStyle()"
+                                     t-on-pointerdown="(ev) => this.onPortPointerDown(ev, node)"/>
+                            </t>
+                        </div>
+                    </div>
+                    <div class="owa_fd_hint text-muted">
+                        Drag a node to move it · drag a right-side dot onto another node to link (or onto empty space to create the next step) · scroll to zoom
+                    </div>
+                </div>
+
+                <!-- ── Inspector ───────────────────────────────────────── -->
+                <div t-if="selectedNode" class="owa_fd_inspector">
+                    <t t-set="node" t-value="selectedNode"/>
+                    <div class="owa_fd_insp_head">
+                        <strong>Step</strong>
+                        <button class="btn btn-sm btn-outline-danger" t-on-click="() => this.deleteStep(node)">
+                            <i class="fa fa-trash"/>
+                        </button>
+                    </div>
+                    <label>Name</label>
+                    <input type="text" class="form-control form-control-sm" t-att-value="node.name"
+                           t-on-change="(ev) => this.onStepField(node, 'name', ev)"/>
+
+                    <label>Type</label>
+                    <select class="form-select form-select-sm"
+                            t-on-change="(ev) => this.onStepField(node, 'step_type', ev)">
+                        <option value="message" t-att-selected="node.step_type === 'message'">Send Message</option>
+                        <option value="menu" t-att-selected="node.step_type === 'menu'">Show Menu</option>
+                        <option value="question" t-att-selected="node.step_type === 'question'">Ask a Question</option>
+                        <option value="handoff" t-att-selected="node.step_type === 'handoff'">Hand off to Human</option>
+                        <option value="create_lead" t-att-selected="node.step_type === 'create_lead'">Create CRM Lead</option>
+                        <option value="end" t-att-selected="node.step_type === 'end'">End Conversation</option>
+                    </select>
+
+                    <label t-if="node.step_type !== 'end'">Message / prompt</label>
+                    <textarea t-if="node.step_type !== 'end'" class="form-control form-control-sm" rows="3"
+                              t-att-value="node.message"
+                              t-on-change="(ev) => this.onStepField(node, 'message', ev)"/>
+
+                    <!-- question config -->
+                    <t t-if="node.step_type === 'question'">
+                        <label>Store answer as</label>
+                        <input type="text" class="form-control form-control-sm" t-att-value="node.answer_var"
+                               placeholder="e.g. email"
+                               t-on-change="(ev) => this.onStepField(node, 'answer_var', ev)"/>
+                        <label>Save answer to</label>
+                        <select class="form-select form-select-sm"
+                                t-on-change="(ev) => this.onStepField(node, 'answer_save_to', ev)">
+                            <option value="none" t-att-selected="node.answer_save_to === 'none'">Just remember it</option>
+                            <option value="name" t-att-selected="node.answer_save_to === 'name'">Contact's name</option>
+                            <option value="email" t-att-selected="node.answer_save_to === 'email'">Contact's email</option>
+                            <option value="note" t-att-selected="node.answer_save_to === 'note'">Post as internal note</option>
+                            <option value="lead" t-att-selected="node.answer_save_to === 'lead'">Keep for the CRM lead</option>
+                        </select>
+                        <label>Validate answer</label>
+                        <select class="form-select form-select-sm"
+                                t-on-change="(ev) => this.onStepField(node, 'answer_validation', ev)">
+                            <option value="none" t-att-selected="node.answer_validation === 'none'">No validation</option>
+                            <option value="email" t-att-selected="node.answer_validation === 'email'">Must be an email</option>
+                            <option value="phone" t-att-selected="node.answer_validation === 'phone'">Must be a phone number</option>
+                            <option value="number" t-att-selected="node.answer_validation === 'number'">Must be a number</option>
+                        </select>
+                    </t>
+
+                    <!-- handoff config -->
+                    <t t-if="node.step_type === 'handoff' || node.step_type === 'route_to_user'">
+                        <label>Assign to user</label>
+                        <select class="form-select form-select-sm"
+                                t-on-change="(ev) => this.onStepField(node, 'handoff_user_id', ev)">
+                            <option value="">(account owner)</option>
+                            <option t-foreach="state.users" t-as="u" t-key="u.id"
+                                    t-att-value="u.id" t-att-selected="node.handoff_user_id === u.id"
+                                    t-esc="u.name"/>
+                        </select>
+                        <label>…or a team</label>
+                        <select class="form-select form-select-sm"
+                                t-on-change="(ev) => this.onStepField(node, 'handoff_team_id', ev)">
+                            <option value="">(none)</option>
+                            <option t-foreach="state.teams" t-as="tm" t-key="tm.id"
+                                    t-att-value="tm.id" t-att-selected="node.handoff_team_id === tm.id"
+                                    t-esc="tm.name"/>
+                        </select>
+                    </t>
+
+                    <!-- menu options editor -->
+                    <t t-if="node.step_type === 'menu'">
+                        <div class="owa_fd_insp_head mt-2">
+                            <strong>Options</strong>
+                            <button class="btn btn-sm btn-light" t-on-click="() => this.addOption(node)">
+                                <i class="fa fa-plus"/> Add
+                            </button>
+                        </div>
+                        <div class="owa_fd_optedit" t-foreach="node.options" t-as="opt" t-key="opt.id">
+                            <input type="text" class="form-control form-control-sm" t-att-value="opt.label"
+                                   placeholder="Label"
+                                   t-on-change="(ev) => this.writeOption(node, opt, { label: ev.target.value })"/>
+                            <input type="text" class="form-control form-control-sm owa_fd_kw" t-att-value="opt.keyword"
+                                   placeholder="keyword"
+                                   t-on-change="(ev) => this.writeOption(node, opt, { keyword: ev.target.value })"/>
+                            <button class="btn btn-sm btn-outline-danger" t-on-click="() => this.deleteOption(node, opt)">
+                                <i class="fa fa-times"/>
+                            </button>
+                        </div>
+                        <small class="text-muted">Drag each option's right-side dot to its next step.</small>
+                    </t>
+                </div>
+
+                <!-- ── Test / preview panel ────────────────────────────── -->
+                <div t-if="state.test.open" class="owa_fd_test">
+                    <div class="owa_fd_insp_head">
+                        <strong><i class="fa fa-flask"/> Preview</strong>
+                        <button class="btn btn-sm btn-light" t-on-click="() => (state.test.open = false)">
+                            <i class="fa fa-times"/>
+                        </button>
+                    </div>
+                    <div class="owa_fd_testlog">
+                        <div t-foreach="state.test.log" t-as="m" t-key="m_index"
+                             class="owa_fd_msg" t-att-class="'owa_fd_' + m.who">
+                            <span t-esc="m.text"/>
+                        </div>
+                        <div t-if="state.test.ended" class="text-muted text-center mt-1">— conversation ended —</div>
+                    </div>
+                    <div class="owa_fd_testin">
+                        <input type="text" class="form-control form-control-sm" placeholder="Type a reply…"
+                               t-on-keydown="onTestKeydown"/>
+                        <button class="btn btn-sm btn-primary" t-on-click="sendTest"><i class="fa fa-paper-plane"/></button>
+                    </div>
+                    <button class="btn btn-sm btn-light w-100 mt-1" t-on-click="startTest">
+                        <i class="fa fa-refresh"/> Restart
+                    </button>
+                    <small class="text-muted d-block mt-1">Approximate preview — real replies also post to Discuss and WhatsApp.</small>
+                </div>
+            </div>
+        </div>
+    </t>
+
+</templates>

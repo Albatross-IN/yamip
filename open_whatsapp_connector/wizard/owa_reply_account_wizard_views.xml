@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="owa_reply_account_wizard_form" model="ir.ui.view">
+        <field name="name">owa.reply.account.wizard.form</field>
+        <field name="model">owa.reply.account.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Reply from account">
+                <group>
+                    <field name="channel_id" invisible="1"/>
+                    <field name="wa_account_id"
+                           options="{'no_create': True, 'no_open': True}"/>
+                </group>
+                <p class="text-muted">
+                    Choose which connected WhatsApp account this conversation
+                    replies from. All new outbound messages here will be sent
+                    from the selected number.
+                </p>
+                <footer>
+                    <button name="action_apply" string="Apply" type="object"
+                            class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

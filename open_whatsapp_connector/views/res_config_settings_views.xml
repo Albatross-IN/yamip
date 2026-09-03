@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_inherit_owa" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.inherit.owa</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <app data-string="Open WhatsApp Connector" string="Open WhatsApp Connector" name="open_whatsapp_connector" groups="open_whatsapp_connector.group_owa_admin">
+                    <block title="Sidecar Defaults">
+                        <setting string="Default Sidecar URL" help="Default URL for new WhatsApp accounts">
+                            <div class="content-group">
+                                <div class="mt16">
+                                    <field name="owa_default_sidecar_url"/>
+                                </div>
+                            </div>
+                        </setting>
+                        <setting string="Default API Key" help="Default API key for authenticating with the sidecar">
+                            <div class="content-group">
+                                <div class="mt16">
+                                    <field name="owa_default_api_key" password="True"/>
+                                </div>
+                            </div>
+                        </setting>
+                        <setting string="Sidecar Directory" help="Absolute path to the sidecar directory on the server. Auto-filled on install; change only if you moved the sidecar.">
+                            <div class="content-group">
+                                <div class="mt16">
+                                    <field name="owa_sidecar_path" placeholder="/path/to/sidecar"/>
+                                    <field name="owa_sidecar_state" invisible="1"/>
+                                    <div class="alert alert-success mt-2 mb-0" role="status" invisible="owa_sidecar_state != 'ok'">
+                                        Ready: Node.js found and the sidecar is built at this path.
+                                    </div>
+                                    <div class="alert alert-warning mt-2 mb-0" role="alert" invisible="owa_sidecar_state != 'no_path'">
+                                        Sidecar Path is empty. It normally auto-fills on install - set it to your addon's <code>/sidecar</code> folder, then click Save.
+                                    </div>
+                                    <div class="alert alert-danger mt-2 mb-0" role="alert" invisible="owa_sidecar_state != 'no_node'">
+                                        Node.js was not found on the server PATH. Install Node.js 22+ from nodejs.org on the Odoo server, then reopen this page.
+                                    </div>
+                                    <div class="alert alert-warning mt-2 mb-0" role="alert" invisible="owa_sidecar_state != 'not_built'">
+                                        The sidecar is not built yet. In this folder run <code>setup.bat</code> (Windows) or <code>setup.sh</code> (Linux), then reopen this page.
+                                    </div>
+                                </div>
+                            </div>
+                        </setting>
+                        <setting string="Auto-start Sidecar" help="Automatically start sidecar when connecting an account">
+                            <div class="o_setting_left_pane">
+                                <field name="owa_sidecar_auto_start"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label for="owa_sidecar_auto_start"/>
+                                <div class="text-muted">
+                                    Start the sidecar process automatically when you click Connect on a WhatsApp account
+                                </div>
+                            </div>
+                        </setting>
+                    </block>
+                    <block title="Contacts">
+                        <setting string="Auto-create Contacts" help="Automatically create contact records for unknown WhatsApp numbers">
+                            <div class="content-group">
+                                <div class="mt16">
+                                    <field name="owa_auto_create_contacts"/>
+                                </div>
+                            </div>
+                        </setting>
+                    </block>
+                    <block title="Access &amp; Visibility">
+                        <setting string="Campaign &amp; Contact Visibility"
+                                 help="Choose whether marketing records are shared across the whole company or restricted to each user and their Sales Team.">
+                            <div class="content-group">
+                                <div class="mt16">
+                                    <field name="owa_marketing_visibility" widget="radio"/>
+                                </div>
+                                <div class="text-muted mt-2">
+                                    Applies to Campaigns, Contact Lists, Broadcast Groups,
+                                    Standing Orders and Status Broadcasts. "Restricted" uses
+                                    Odoo Sales Teams: each user sees only records they own or
+                                    that belong to a team they are a member of / lead.
+                                    WhatsApp Administrators always see everything.
+                                </div>
+                            </div>
+                        </setting>
+                        <setting string="WhatsApp Conversation Visibility"
+                                 help="Choose whether WhatsApp conversations are shared across agents or restricted to the assigned agent.">
+                            <div class="content-group">
+                                <div class="mt16">
+                                    <field name="owa_chat_visibility" widget="radio"/>
+                                </div>
+                                <div class="text-muted mt-2">
+                                    "Own agent" shows each agent only the WhatsApp conversations
+                                    assigned to them (the channel Assignee). New incoming chats are
+                                    auto-assigned to their routed / first notified agent; reassign
+                                    from the conversation's Assignee field. Unassigned conversations
+                                    stay visible to all, and non-WhatsApp Discuss (DMs, group chats,
+                                    livechat, regular channels) is never affected. WhatsApp
+                                    Administrators always see every conversation.
+                                </div>
+                            </div>
+                        </setting>
+                        <setting string="WhatsApp Account Visibility"
+                                 help="Choose whether only administrators add WhatsApp accounts, or each internal user can self-service add &amp; scan their own (pending admin approval).">
+                            <div class="content-group">
+                                <div class="mt16">
+                                    <field name="owa_account_visibility" widget="radio"/>
+                                </div>
+                                <div class="text-muted mt-2">
+                                    "Self-service" lets any internal user add and scan their OWN
+                                    WhatsApp from "My WhatsApp"; the account stays pending until a
+                                    WhatsApp Administrator approves it before it can send or receive.
+                                    A user sees only their own account, a Sales Team leader sees
+                                    their team's, and WhatsApp Administrators always see &amp; approve all.
+                                </div>
+                            </div>
+                        </setting>
+                    </block>
+                    <block title="Recommended Automations">
+                        <setting string="Ready-to-use Automations"
+                                 help="Switch on the recommended notification rules in one click — ideal for non-technical admins.">
+                            <div class="content-group">
+                                <div class="text-muted">
+                                    Activates the ready-made, always-reliable notification rules
+                                    (Sale confirmed, Invoice posted, Payment received, Delivery done,
+                                    Quotation sent, Purchase Order confirmed, Repair done) and assigns
+                                    your first connected WhatsApp account so they start sending right away.
+                                    Stage-based rules (CRM Won, Task Done, Ticket Solved) are left off
+                                    so you can check their trigger stage first.
+                                </div>
+                                <div class="mt16">
+                                    <button name="action_owa_enable_recommended" type="object"
+                                            string="Enable recommended automations" class="btn-primary"/>
+                                </div>
+                            </div>
+                        </setting>
+                    </block>
+                    <block title="Website WhatsApp Widget">
+                        <setting string="WhatsApp Chat Button" help="Show a floating WhatsApp chat button on your website">
+                            <div class="o_setting_left_pane">
+                                <field name="owa_website_widget_enabled"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label for="owa_website_widget_enabled"/>
+                                <div class="text-muted">
+                                    Show a floating WhatsApp chat button on your website
+                                </div>
+                                <div invisible="not owa_website_widget_enabled" class="mt-2">
+                                    <label for="owa_website_widget_phone"/>
+                                    <field name="owa_website_widget_phone" placeholder="+1234567890"/>
+                                    <label for="owa_website_widget_message" class="mt-2"/>
+                                    <field name="owa_website_widget_message"
+                                           placeholder="Hello! I'd like to know more about..."/>
+                                    <div class="mt-3" invisible="not owa_website_widget_code">
+                                        <label for="owa_website_widget_code"/>
+                                        <div class="text-muted mb-1">
+                                            Paste this code into your website's HTML to add the WhatsApp button
+                                        </div>
+                                        <field name="owa_website_widget_code" widget="CopyClipboardText"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </setting>
+                    </block>
+                    <block title="Meta App (Cloud API)"
+                           help="Optional. Fill this in only to enable one-click 'Connect with Facebook' (Embedded Signup) onboarding of Cloud API numbers. Manual credential entry on each account works without it.">
+                        <setting string="Meta App ID"
+                                 help="Your Meta App's ID, used by the Embedded Signup Facebook login.">
+                            <div class="content-group">
+                                <div class="mt16">
+                                    <field name="owa_meta_app_id"/>
+                                </div>
+                            </div>
+                        </setting>
+                        <setting string="Meta App Secret"
+                                 help="Used server-side to exchange the Embedded Signup code for a token. Never sent to the browser.">
+                            <div class="content-group">
+                                <div class="mt16">
+                                    <field name="owa_meta_app_secret" password="True"/>
+                                </div>
+                            </div>
+                        </setting>
+                        <setting string="Embedded Signup Config ID"
+                                 help="The WhatsApp Embedded Signup configuration id from your Meta App's Facebook Login for Business settings.">
+                            <div class="content-group">
+                                <div class="mt16">
+                                    <field name="owa_meta_config_id"/>
+                                </div>
+                            </div>
+                        </setting>
+                        <setting string="Graph API Version"
+                                 help="Meta Graph API version for the onboarding token exchange, e.g. v23.0.">
+                            <div class="content-group">
+                                <div class="mt16">
+                                    <field name="owa_meta_api_version" placeholder="v23.0"/>
+                                </div>
+                            </div>
+                        </setting>
+                    </block>
+                </app>
+            </xpath>
+        </field>
+    </record>
+</odoo>

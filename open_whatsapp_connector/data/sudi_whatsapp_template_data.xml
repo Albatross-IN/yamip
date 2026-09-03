@@ -1,0 +1,264 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- 1. Pickup Task Assignment (To Operator) -->
+        <record id="sudi_wa_template_pickup_scheduled" model="sudi.whatsapp.template">
+            <field name="name">Pickup Task Assignment (To Operator)</field>
+            <field name="event">pickup_scheduled</field>
+            <field name="sequence">10</field>
+            <field name="body">*SDPPL*
+*_Pickup Task Assignment_*
+
+🚚  *NEW JANGAD PICKUP ASSIGNED*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+A new Jangad pickup request has been received and assigned to you.
+
+📌  *PICKUP DETAILS*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    ▪ *Customer :*  {{customer_name}}
+    ▪ *Address  :*  {{address}}
+    ▪ *Contact  :*  {{phone}}
+
+Please coordinate with the customer (if required) and proceed with the pickup.
+
+🔗  *RECEIPT LINK*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+View full details and receipt form here:
+{{url}}
+
+Thank you,
+
+*Team SDPPL*</field>
+        </record>
+
+        <!-- 2. Pickup Request Confirmation (To Customer) -->
+        <record id="sudi_wa_template_pickup_request_confirmation" model="sudi.whatsapp.template">
+            <field name="name">Pickup Request Confirmation (To Customer)</field>
+            <field name="event">pickup_request_confirmation</field>
+            <field name="sequence">20</field>
+            <field name="body">*SDPPL*
+*_Pickup Request Confirmation_*
+
+Dear *{{customer_name}}*,
+
+📦  *JANGAD PICKUP REQUEST RECEIVED*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+We have successfully received your request! Our pickup representative will collect the items as per the details provided in your Jangad request.
+
+📌  *PICKUP DETAILS*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    ▪ *Reference No :*  #{{pickup_reference}}
+    ▪ *Status       :*  Scheduled for Pickup
+
+📞  *NEED ASSISTANCE?*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+If you need to reach our team regarding this pickup, feel free to contact us:
+
+    📱 *Phone 1 :* +91 9653402615
+    📱 *Phone 2 :* +91 8080809288
+
+Thank you for choosing *SDPPL*. We look forward to serving you!
+
+Best Regards,
+
+*Team SDPPL*</field>
+        </record>
+
+        <!-- 3. Pickup Completion Notice (To Customer) -->
+        <record id="sudi_wa_template_pickup_confirmed" model="sudi.whatsapp.template">
+            <field name="name">Pickup Completion Notice (To Customer)</field>
+            <field name="event">pickup_confirmed</field>
+            <field name="sequence">30</field>
+            <field name="body">*SDPPL*
+*_Pickup Completion Notice_*
+
+Dear *{{customer_name}}*,
+
+✅  *JANGAD PICKUP COMPLETED*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Your items have been successfully collected as per your Jangad request.
+
+📌  *PICKUP DETAILS*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    ▪ *Reference No :*  #{{pickup_reference}}
+    ▪ *Status       :*  Completed
+
+Thank you for choosing *SDPPL*. We appreciate your trust and look forward to serving you again!
+
+Best Regards,
+
+*Team SDPPL*</field>
+        </record>
+
+        <!-- 4. Pickup Admin Intimation (To Admin) -->
+        <record id="sudi_wa_template_pickup_admin_intimation" model="sudi.whatsapp.template">
+            <field name="name">Pickup Admin Intimation (To Admin)</field>
+            <field name="event">pickup_admin_intimation</field>
+            <field name="sequence">40</field>
+            <field name="body">*SDPPL*
+*_Admin Intimation Notice_*
+
+📋  *JANGAD PICKUP COMPLETED*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+The items have been successfully collected as per the Jangad request. Please prepare data tables for job work and billing.
+
+📌  *PICKUP SUMMARY*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    ▪ *Customer     :*  {{customer_name}}
+    ▪ *Reference No :*  #{{pickup_reference}}
+    ▪ *Pickup Person:*  {{pickup_person}}
+
+🔗  *RECEIPT LINK*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{{url}}
+
+Thank you,
+
+*Team SDPPL*</field>
+        </record>
+
+        <!-- 5. Pickup Cancellation Notice (To Customer) -->
+        <record id="sudi_wa_template_pickup_cancelled" model="sudi.whatsapp.template">
+            <field name="name">Pickup Cancellation Notice (To Customer)</field>
+            <field name="event">pickup_cancelled</field>
+            <field name="sequence">50</field>
+            <field name="body">*SDPPL*
+*_Pickup Cancellation Notice_*
+
+Dear *{{customer_name}}*,
+
+🚫  *JANGAD PICKUP CANCELLED*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+As per your request, we have cancelled your pickup.
+
+📌  *CANCELLATION DETAILS*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    ▪ *Reference No :*  #{{pickup_reference}}
+    ▪ *Status       :*  Cancelled
+
+The pickup Jangad document is attached for your reference.
+
+🌐  *UPLOAD NEW JANGAD*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+For any future requirements, you can easily upload a new Jangad here:
+https://manage.sdppl.com/jangad
+
+Thank you for choosing *SDPPL*. We look forward to serving you again!
+
+Best Regards,
+
+*Team SDPPL*</field>
+        </record>
+
+        <!-- 6. Out for Delivery Update (To Customer) -->
+        <record id="sudi_wa_template_delivery_assigned" model="sudi.whatsapp.template">
+            <field name="name">Out for Delivery Update (To Customer)</field>
+            <field name="event">delivery_assigned</field>
+            <field name="sequence">60</field>
+            <field name="body">*SDPPL*
+*_Delivery Update_*
+
+Dear *{{customer_name}}*,
+
+📦  *YOUR ORDER IS READY FOR DELIVERY*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Your order is now ready and has been assigned for delivery.
+
+📌  *DELIVERY DETAILS*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    ▪ *Reference No :*  #{{delivery_reference}}
+    ▪ *Status       :*  Out for Delivery
+
+Our delivery representative will contact you shortly to deliver your order.
+
+Thank you for choosing *SDPPL*. We look forward to serving you!
+
+Best Regards,
+
+*Team SDPPL*</field>
+        </record>
+
+        <!-- 7. Delivery Task Assignment (To Delivery Person) -->
+        <record id="sudi_wa_template_delivery_dispatch" model="sudi.whatsapp.template">
+            <field name="name">Delivery Task Assignment (To Delivery Person)</field>
+            <field name="event">delivery_dispatch</field>
+            <field name="sequence">70</field>
+            <field name="body">*SDPPL*
+*_Delivery Task Assignment_*
+
+🚚  *NEW DELIVERY TASK ASSIGNED*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+A delivery order has been assigned to you.
+
+📌  *DELIVERY DETAILS*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    ▪ *Customer     :*  {{customer_name}}
+    ▪ *Address      :*  {{address}}
+    ▪ *Contact      :*  {{phone}}
+    ▪ *Reference No :*  #{{delivery_reference}}
+
+Please coordinate with the customer and proceed with the delivery.
+
+🔗  *DELIVERY ORDER LINK*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{{url}}
+
+Thank you,
+
+*Team SDPPL*</field>
+        </record>
+
+        <!-- 8. Delivery Completion Notice (To Customer) -->
+        <record id="sudi_wa_template_delivery_completed" model="sudi.whatsapp.template">
+            <field name="name">Delivery Completion Notice (To Customer)</field>
+            <field name="event">delivery_completed</field>
+            <field name="sequence">80</field>
+            <field name="body">*SDPPL*
+*_Delivery Confirmation_*
+
+Dear *{{customer_name}}*,
+
+✅  *DELIVERY COMPLETED*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Your order has been successfully delivered.
+
+📌  *DELIVERY DETAILS*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    ▪ *Reference No :*  #{{delivery_reference}}
+    ▪ *Status       :*  Delivered
+
+We hope you had a smooth experience with *SDPPL*. Thank you for choosing us!
+
+Warm Regards,
+
+*Team SDPPL*</field>
+        </record>
+
+        <!-- 9. Delivery Admin Intimation (To Admin) -->
+        <record id="sudi_wa_template_delivery_admin_intimation" model="sudi.whatsapp.template">
+            <field name="name">Delivery Admin Intimation (To Admin)</field>
+            <field name="event">delivery_admin_intimation</field>
+            <field name="sequence">90</field>
+            <field name="body">*SDPPL*
+*_Delivery Admin Intimation_*
+
+✅  *DELIVERY ORDER COMPLETED*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+A delivery order has been marked as delivered successfully.
+
+📌  *SUMMARY*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    ▪ *Customer       :*  {{customer_name}}
+    ▪ *Reference No   :*  #{{delivery_reference}}
+    ▪ *Delivery Person:*  {{delivery_person}}
+
+🔗  *DELIVERY ORDER LINK*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{{url}}
+
+Thank you,
+
+*Team SDPPL*</field>
+        </record>
+    </data>
+</odoo>

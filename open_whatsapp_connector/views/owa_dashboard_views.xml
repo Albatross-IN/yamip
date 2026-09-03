@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Client action that mounts the OWL dashboard component. ir.actions.client
+         has no groups_id, so access is enforced via the gated menu plus the
+         server-side guard in get_dashboard_data / action_start_sidecars. -->
+    <record id="action_owa_dashboard" model="ir.actions.client">
+        <field name="name">WhatsApp Dashboard</field>
+        <field name="tag">owa_dashboard</field>
+    </record>
+
+</odoo>
