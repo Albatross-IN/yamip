@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="wa_template_otp_auth_generic" model="whatsapp.template">
+        <field name="sequence">10</field>
+        <field name="name">OTP Authentication Template</field>
+        <field name="template_name">otp_auth_generic</field>
+        <field name="model_id" ref="base.model_res_partner"/>
+        <field name="phone_field">phone</field>
+        <field name="lang_code">en</field>
+        <field name="template_type">authentication</field>
+        <field name="status">draft</field>
+        <field name="quality">none</field>
+        <field name="header_type">none</field>
+        <field name="footer_text">Expires in 30 minutes.</field>
+        <field name="body"><![CDATA[*{{1}}* is your verification code. For your security, do not share this code.]]></field>
+        <field name="active">True</field>
+        <field name="button_ids" eval="[
+            (0, 0, {
+                'sequence': 0,
+                'name': 'Copy code',
+                'button_type': 'url',
+                'url_type': 'dynamic',
+                'website_url': 'https://www.whatsapp.com/otp/code/?otp_type=COPY_CODE&amp;code_expiration_minutes=30&amp;code=',
+            })
+        ]"/>
+    </record>
+</odoo>

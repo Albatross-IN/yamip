@@ -61,11 +61,14 @@ class WebAuthOtpController(http.Controller):
                 create_vals['mobile'] = phone_clean
             partner = request.env['res.partner'].with_user(SUPERUSER_ID).create(create_vals)
 
-        # Find WhatsApp template
-        template = request.env['whatsapp.template'].with_user(SUPERUSER_ID).search([
-            ('status', '=', 'approved'),
-            ('template_name', 'in', ['otp_auth_yamip'])
-        ], limit=1)
+        template = request.env.ref('web_auth_otp_login.wa_template_otp_auth_generic', raise_if_not_found=False)
+        if template:
+            template = template.with_user(SUPERUSER_ID)
+        if not template:
+            template = request.env['whatsapp.template'].with_user(SUPERUSER_ID).search([
+                ('status', '=', 'approved'),
+                ('template_name', '=', 'otp_auth_generic')
+            ], limit=1)
 
         if not template:
             return {'success': False, 'error': _('WhatsApp sending failed: No approved WhatsApp template found in the system.')}
@@ -122,7 +125,10 @@ class WebAuthOtpController(http.Controller):
                 button_vars = template.variable_ids.filtered(lambda v: v.line_type == 'button' and v.field_type == 'free_text')
                 button_vars = button_vars.sorted(key=lambda v: v.button_id.sequence or 0)
                 for i, var in enumerate(button_vars):
-                    free_text_json[f'button_dynamic_url_{i+1}'] = var.demo_value or '/'
+                    val = var.demo_value or '/'
+                    if 'code=' in val:
+                        val = val.replace('123456', otp).replace('???', otp)
+                    free_text_json[f'button_dynamic_url_{i+1}'] = val
 
             # Create the whatsapp.message record
             wa_msg = request.env['whatsapp.message'].with_user(SUPERUSER_ID).create({
